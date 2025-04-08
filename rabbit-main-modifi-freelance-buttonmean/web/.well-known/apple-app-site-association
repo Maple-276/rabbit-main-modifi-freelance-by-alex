@@ -1,0 +1,13 @@
+{
+    "applinks": {
+        "apps": [],
+        "details": [
+            {
+                "appID": "S8T7AN2XHW.app.rabbit.user",
+                "paths": [
+                    "*"
+                ]
+            }
+        ]
+    }
+}
