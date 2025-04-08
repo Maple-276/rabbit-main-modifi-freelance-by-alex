@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "rabbit-main-modifi-freelance-buttonmean",
+            "cwd": "rabbit-main-modifi-freelance-buttonmean",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "rabbit-main-modifi-freelance-buttonmean (profile mode)",
+            "cwd": "rabbit-main-modifi-freelance-buttonmean",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "rabbit-main-modifi-freelance-buttonmean (release mode)",
+            "cwd": "rabbit-main-modifi-freelance-buttonmean",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}
