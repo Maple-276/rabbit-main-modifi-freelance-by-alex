@@ -1,25 +1,27 @@
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_restaurant/common/models/config_model.dart';
 import 'package:flutter_restaurant/common/widgets/custom_image_widget.dart';
 import 'package:flutter_restaurant/common/widgets/custom_pop_scope_widget.dart';
+import 'package:flutter_restaurant/common/widgets/custom_button_widget.dart';
+import 'package:flutter_restaurant/common/widgets/custom_text_field_widget.dart';
+import 'package:flutter_restaurant/features/language/providers/localization_provider.dart';
 import 'package:flutter_restaurant/helper/custom_snackbar_helper.dart';
 import 'package:flutter_restaurant/helper/number_checker_helper.dart';
 import 'package:flutter_restaurant/helper/responsive_helper.dart';
 import 'package:flutter_restaurant/helper/router_helper.dart';
 import 'package:flutter_restaurant/features/auth/providers/auth_provider.dart';
 import 'package:flutter_restaurant/features/splash/providers/splash_provider.dart';
+import 'package:flutter_restaurant/utill/color_resources.dart';
 import 'package:flutter_restaurant/utill/dimensions.dart';
 import 'package:flutter_restaurant/utill/images.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
 
-/// A screen that handles user authentication through phone number verification.
-/// 
-/// This screen provides functionality for users to enter their phone number,
-/// receive a verification code, and complete the login process.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -28,31 +30,21 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  // Form controllers and focus nodes
   final FocusNode _phoneFocus = FocusNode();
   final TextEditingController _phoneController = TextEditingController();
   final GlobalKey<FormState> _formKeyLogin = GlobalKey<FormState>();
-  
-  // Animation controllers
+  String? countryCode;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
-  // State variables
-  String? countryCode;
-  bool _isButtonDisabled = false; // Prevents multiple clicks
-  DateTime? _lastClickTime; // Tracks time between clicks
+  bool _isButtonDisabled = false; // Prevenir múltiples clics
+  DateTime? _lastClickTime; // Rastrear tiempo entre clics
 
   @override
   void initState() {
     super.initState();
     
-    _initializeAnimations();
-    _initializeCountryCode();
-  }
-
-  /// Initializes fade-in animations for UI elements
-  void _initializeAnimations() {
     try {
+      // Configurar animaciones
       _animationController = AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 800),
@@ -67,17 +59,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       
       _animationController.forward();
     } catch (e) {
-      debugPrint('Animation initialization error: $e');
+      // Si la animación falla, simplemente continuar sin ella
+      debugPrint('Error al inicializar animaciones: $e');
     }
-  }
-
-  /// Sets the default country code based on app configuration
-  void _initializeCountryCode() {
+    
+    // Inicialización segura
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       
       try {
-        // Get configuration from SplashProvider
         final configModel = Provider.of<SplashProvider>(context, listen: false).configModel;
         if (configModel != null) {
           final String defaultCountryCode = configModel.countryCode ?? 'US';
@@ -89,41 +79,42 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         } else {
           if (mounted) {
             setState(() {
-              countryCode = '+1'; // Default value if no configuration exists
+              countryCode = '+1'; // Valor por defecto si no hay configuración
             });
           }
         }
         
-        // Reset authentication provider states
+        // Resetear estados
         final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
         authProvider.setIsLoading = false;
         if (authProvider.isPhoneNumberVerificationButtonLoading) {
           authProvider.setIsPhoneVerificationButttonLoading = false;
         }
       } catch (e) {
-        // Set default values if providers cannot be accessed
+        // Si hay un error al acceder a los providers, establecer valores por defecto
         if (mounted) {
           setState(() {
             countryCode = '+1';
           });
         }
-        debugPrint('Country code initialization error: $e');
+        debugPrint('Error al inicializar datos: $e');
       }
     });
   }
 
   @override
   void dispose() {
-    // Clean up resources to prevent memory leaks
-    _phoneController.dispose();
-    _phoneFocus.dispose();
-    _animationController.dispose();
+    try {
+      _phoneController.dispose();
+      _phoneFocus.dispose();
+      _animationController.dispose();
+    } catch (e) {
+      debugPrint('Error al liberar recursos: $e');
+    }
     super.dispose();
   }
 
-  /// Prevents rapid multiple taps on buttons
-  /// 
-  /// Returns true if a tap occurred within 1 second of the previous tap
+  // Método para prevenir múltiples clics en corto tiempo
   bool _isMultiTapping() {
     if (_lastClickTime == null) {
       _lastClickTime = DateTime.now();
@@ -133,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final DateTime now = DateTime.now();
     final Duration difference = now.difference(_lastClickTime!);
     
-    if (difference.inMilliseconds < 1000) { // 1 second between clicks
+    if (difference.inMilliseconds < 1000) { // 1 segundo entre clics
       return true;
     }
     
@@ -141,9 +132,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return false;
   }
   
-  /// Validates phone number format and content
-  /// 
-  /// Returns a tuple with (isValid, errorMessage)
+  // Validar número de teléfono de forma segura
   (bool isValid, String? errorMessage) validatePhoneNumber(String phone) {
     try {
       if (phone.isEmpty) {
@@ -160,37 +149,36 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       
       return (true, null);
     } catch (e) {
-      debugPrint('Phone validation error: $e');
+      debugPrint('Error validando número de teléfono: $e');
       return (false, 'Error al validar el número de teléfono');
     }
   }
   
-  /// Sends verification code to the provided phone number
-  /// 
-  /// Handles various error scenarios with appropriate user feedback
+  // Método para enviar OTP con manejo de errores
   Future<void> _sendVerificationCode(String phone) async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      // Make API call to verify number and send OTP
+      // Llamada real a la API para verificar el número antes de enviar OTP
       final apiResponseModel = await _verifyAndSendOTP(phone, authProvider);
       
-      if (!mounted) return;
-      
-      setState(() {
-        _isButtonDisabled = false;
-      });
-      
-      if (apiResponseModel.success) {
-        showCustomSnackBarHelper(
-          'Código de verificación enviado a $phone',
-          isError: false
-        );
+      // Si el temporizador de simulación estaba presente, cancelarlo
+      if (mounted) {
+        setState(() {
+          _isButtonDisabled = false;
+        });
         
-        // Navigate to OTP verification
-        _handleOTPSent(phone, apiResponseModel.tempToken ?? '', apiResponseModel.message ?? '');
-      } else {
-        showCustomSnackBarHelper(apiResponseModel.message ?? 'Error al enviar código de verificación');
+        if (apiResponseModel.success) {
+          showCustomSnackBarHelper(
+            'Código de verificación enviado a $phone',
+            isError: false
+          );
+          
+          // Redirigir a pantalla de verificación OTP o mostrar el modal de OTP
+          _handleOTPSent(phone, apiResponseModel.tempToken ?? '', apiResponseModel.message ?? '');
+        } else {
+          showCustomSnackBarHelper(apiResponseModel.message ?? 'Error al enviar código de verificación');
+        }
       }
     } on SocketException catch (e) {
       _handleNetworkError(e);
@@ -208,47 +196,50 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
   
-  /// Verifies the phone number and sends OTP
-  /// 
-  /// Makes the actual API call to the authentication service
+  // Método para verificar el número y enviar OTP
   Future<ApiResponseModel> _verifyAndSendOTP(String phone, AuthProvider authProvider) async {
     try {
-      // In production, use the real API call:
-      // return await authProvider.sendOTPForVerification(phone);
-      
-      // For testing/development, use mock response
-      await Future.delayed(const Duration(seconds: 2));
-      return ApiResponseModel(
+      // Estructura de respuesta simulada para pruebas
+      final ApiResponseModel mockResponse = ApiResponseModel(
         success: true,
         message: 'Código enviado con éxito',
         tempToken: 'temp_token_${DateTime.now().millisecondsSinceEpoch}',
       );
+      
+      // Simulación de llamada a API con latencia
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Esta es la implementación real que se utilizaría:
+      // return await authProvider.sendOTPForVerification(phone);
+      
+      return mockResponse;
     } catch (e) {
-      debugPrint('OTP sending error: $e');
-      rethrow; // Re-throw for centralized error handling
+      debugPrint('Error en verificación de teléfono: $e');
+      rethrow; // Reenviar la excepción para manejo centralizado
     }
   }
   
-  /// Handles successful OTP sending
-  /// 
-  /// Shows verification dialog or navigates to verification screen
+  // Manejar proceso posterior al envío exitoso de OTP
   void _handleOTPSent(String phone, String tempToken, String message) {
     try {
-      // Store session data (could be moved to secure storage in production)
+      // Guardar datos temporales para referencia
       final Map<String, dynamic> otpSessionData = {
         'phone': phone,
         'temp_token': tempToken,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
       
-      // Show OTP verification dialog
+      // Aquí se podría almacenar en SharedPreferences si fuera necesario
+      
+      // En una implementación real, navegar a la pantalla de verificación OTP 
+      // o mostrar un diálogo para ingresar el código
       _showOTPVerificationDialog(phone, tempToken);
     } catch (e) {
       _handleGenericError('Error al procesar respuesta del servidor', e);
     }
   }
   
-  /// Error handler for network connectivity issues
+  // Manejadores de errores especializados
   void _handleNetworkError(SocketException e) {
     if (mounted) {
       setState(() {
@@ -258,11 +249,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         'Error de conexión. Por favor verifica tu conexión a internet.', 
         isError: true
       );
-      debugPrint('Network error: ${e.message}');
+      debugPrint('Error de red: ${e.message}');
     }
   }
   
-  /// Error handler for request timeouts
   void _handleTimeoutError(TimeoutException e) {
     if (mounted) {
       setState(() {
@@ -272,11 +262,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         'Tiempo de espera agotado. Por favor intenta de nuevo.', 
         isError: true
       );
-      debugPrint('Timeout error: ${e.message}');
+      debugPrint('Error de timeout: ${e.message}');
     }
   }
   
-  /// Error handler for data format issues
   void _handleFormatError(FormatException e) {
     if (mounted) {
       setState(() {
@@ -286,17 +275,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         'Error en formato de datos. Por favor contacta a soporte.', 
         isError: true
       );
-      debugPrint('Format error: ${e.message}');
+      debugPrint('Error de formato: ${e.message}');
     }
   }
   
-  /// Generic error handler for unexpected exceptions
   void _handleGenericError(String userMessage, Object error) {
     showCustomSnackBarHelper(userMessage, isError: true);
     debugPrint('Error: $error');
   }
   
-  /// Shows a modal dialog for OTP verification
+  // Mostrar diálogo para verificación OTP
   void _showOTPVerificationDialog(String phone, String tempToken) {
     final TextEditingController otpController = TextEditingController();
     bool isVerifying = false;
@@ -333,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                   const SizedBox(height: 20),
                   
-                  // OTP input field
+                  // Campo OTP
                   TextField(
                     controller: otpController,
                     keyboardType: TextInputType.number,
@@ -369,7 +357,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     ],
                   ),
                   
-                  // Error message display
                   if (errorMessage.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 10),
@@ -384,7 +371,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 ],
               ),
               actions: [
-                // Cancel button
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
@@ -396,8 +382,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     ),
                   ),
                 ),
-                
-                // Verify button
                 ElevatedButton(
                   onPressed: isVerifying 
                     ? null 
@@ -424,14 +408,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         );
                         
                         if (result.success) {
-                          Navigator.pop(context); // Close dialog
+                          Navigator.pop(context); // Cerrar diálogo
                           
+                          // Mostrar mensaje de éxito
                           showCustomSnackBarHelper(
                             'Verificación exitosa', 
                             isError: false
                           );
                           
-                          // Navigate to dashboard or main page
+                          // Si la verificación fue exitosa, navegar al dashboard o página principal
                           RouterHelper.getDashboardRoute(
                             'home', 
                             action: RouteAction.pushNamedAndRemoveUntil
@@ -447,7 +432,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           isVerifying = false;
                           errorMessage = 'Error al procesar verificación';
                         });
-                        debugPrint('OTP verification error: $e');
+                        debugPrint('Error al verificar OTP: $e');
                       }
                     },
                   style: ElevatedButton.styleFrom(
@@ -477,9 +462,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
   }
   
-  /// Verifies the OTP entered by the user
-  /// 
-  /// Makes the API call to verify the code and complete login
+  // Método para verificar el código OTP
   Future<ApiResponseModel> _verifyOTP(
     String phone, 
     String otp, 
@@ -487,13 +470,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     AuthProvider authProvider
   ) async {
     try {
-      // In production, use the real API call:
-      // return await authProvider.verifyOTP(phone, otp, tempToken);
-      
-      // For testing/development, use mock response
+      // Simulación de verificación con latencia
       await Future.delayed(const Duration(seconds: 2));
       
-      // Mock verification (success if OTP is 123456)
+      // Esta es una simulación para pruebas
+      // En implementación real se usaría:
+      // return await authProvider.verifyOTP(phone, otp, tempToken);
+      
+      // Verificación simulada (éxito si OTP es 123456)
       if (otp == '123456') {
         return ApiResponseModel(
           success: true,
@@ -508,7 +492,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         );
       }
     } catch (e) {
-      debugPrint('OTP verification API error: $e');
+      debugPrint('Error en verificación de OTP: $e');
       return ApiResponseModel(
         success: false,
         message: 'Error del servidor al verificar el código',
@@ -518,7 +502,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    // Safe handling to prevent errors if animation wasn't initialized correctly
+    // Manejo seguro para prevenir errores si la animación no se inicializó correctamente
     final fadeAnimation = _fadeAnimation ?? AlwaysStoppedAnimation(1.0);
     
     final double width = MediaQuery.of(context).size.width;
@@ -543,7 +527,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         : const Color(0xFFFAFAFA),
                       child: Stack(
                         children: [
-                          // Decorative background shape
+                          // Fondo con forma decorativa (opcional)
                           Positioned(
                             top: -size.height * 0.15,
                             right: -size.width * 0.4,
@@ -557,9 +541,338 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                           ),
                           
-                          // Main content
+                          // Contenido principal
                           Center(
-                            child: _buildLoginForm(isDesktop, width, isDarkMode),
+                            child: Container(
+                              width: isDesktop ? 480 : width,
+                              margin: EdgeInsets.symmetric(
+                                horizontal: isDesktop ? 0 : Dimensions.paddingSizeLarge,
+                                vertical: Dimensions.paddingSizeLarge,
+                              ),
+                              padding: isDesktop 
+                                ? const EdgeInsets.all(40) 
+                                : const EdgeInsets.all(Dimensions.paddingSizeLarge),
+                              decoration: isDesktop ? BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).shadowColor.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  )
+                                ],
+                              ) : null,
+                              child: Consumer<AuthProvider>(
+                                builder: (context, authProvider, child) => Form(
+                                  key: _formKeyLogin,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start, 
+                                    children: [
+                                      // Logo
+                                      if (isDesktop)
+                                        Consumer<SplashProvider>(
+                                          builder: (context, splash, child) {
+                                            final String? logoUrl = splash.baseUrls?.restaurantImageUrl != null && splash.configModel?.restaurantLogo != null
+                                              ? '${splash.baseUrls?.restaurantImageUrl}/${splash.configModel!.restaurantLogo}'
+                                              : null;
+                                              
+                                            return Center(
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(bottom: 40),
+                                                child: Directionality(
+                                                  textDirection: TextDirection.ltr,
+                                                  child: CustomImageWidget(
+                                                    image: logoUrl ?? '',
+                                                    placeholder: Images.webAppBarLogo,
+                                                    fit: BoxFit.contain,
+                                                    width: 120, height: 80,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        ),
+                                      
+                                      // Encabezado 
+                                      Text(
+                                        'Bienvenido',
+                                        style: rubikBold.copyWith(
+                                          fontSize: 28,
+                                          color: Theme.of(context).primaryColor,
+                                        ),
+                                      ),
+                                      
+                                      const SizedBox(height: 8),
+                                      
+                                      // Subtítulo
+                                      Text(
+                                        'Ingresa tu número para continuar',
+                                        style: rubikRegular.copyWith(
+                                          fontSize: 16,
+                                          color: Theme.of(context).hintColor,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      
+                                      const SizedBox(height: 40),
+                                      
+                                      // Campo de teléfono con diseño mejorado
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                            child: Text(
+                                              'Número de teléfono',
+                                              style: rubikMedium.copyWith(
+                                                fontSize: 14,
+                                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(12),
+                                              color: isDarkMode
+                                                  ? Colors.grey[900]
+                                                  : Colors.grey[50],
+                                              border: Border.all(
+                                                color: Colors.grey.withOpacity(0.2),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                // Selector de código de país con estilo
+                                                Container(
+                                                  height: 60,
+                                                  decoration: BoxDecoration(
+                                                    border: Border(
+                                                      right: BorderSide(
+                                                        color: Colors.grey.withOpacity(0.2),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  child: CountryCodePicker(
+                                                    onChanged: (CountryCode value) {
+                                                      setState(() {
+                                                        countryCode = value.dialCode;
+                                                      });
+                                                    },
+                                                    initialSelection: countryCode?.replaceAll('+', '') ?? 'US',
+                                                    showDropDownButton: true,
+                                                    padding: EdgeInsets.zero,
+                                                    showFlagMain: true,
+                                                    dialogBackgroundColor: Theme.of(context).cardColor,
+                                                    flagWidth: 22,
+                                                    textStyle: rubikRegular.copyWith(
+                                                      fontSize: 16,
+                                                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                                                    ),
+                                                  ),
+                                                ),
+                                                
+                                                // Campo de entrada para teléfono
+                                                Expanded(
+                                                  child: TextFormField(
+                                                    controller: _phoneController,
+                                                    focusNode: _phoneFocus,
+                                                    style: rubikRegular.copyWith(
+                                                      fontSize: 16,
+                                                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                                                    ),
+                                                    keyboardType: TextInputType.phone,
+                                                    textInputAction: TextInputAction.done,
+                                                    // Agregar validación de entrada para permitir solo números
+                                                    inputFormatters: [
+                                                      FilteringTextInputFormatter.digitsOnly,
+                                                    ],
+                                                    // Límite de caracteres para prevenir desbordamientos
+                                                    maxLength: 15,
+                                                    // Ocultar el contador
+                                                    buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                                                    decoration: InputDecoration(
+                                                      hintText: '123 456 7890',
+                                                      hintStyle: rubikRegular.copyWith(
+                                                        color: Theme.of(context).hintColor,
+                                                        fontSize: 16,
+                                                      ),
+                                                      isDense: true,
+                                                      filled: true,
+                                                      fillColor: Colors.transparent,
+                                                      border: InputBorder.none,
+                                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      
+                                      const SizedBox(height: 12),
+                                      
+                                      // Mensaje de error con estilo
+                                      if (authProvider.loginErrorMessage != null && authProvider.loginErrorMessage!.isNotEmpty)
+                                        Container(
+                                          margin: const EdgeInsets.only(bottom: 16, top: 4),
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.error.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Theme.of(context).colorScheme.error.withOpacity(0.2),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.error_outline,
+                                                color: Theme.of(context).colorScheme.error,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  authProvider.loginErrorMessage ?? "",
+                                                  style: rubikRegular.copyWith(
+                                                    fontSize: 13,
+                                                    color: Theme.of(context).colorScheme.error,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      
+                                      const SizedBox(height: 32),
+                                      
+                                      // Botón de continuar estilizado
+                                      !authProvider.isLoading && !authProvider.isPhoneNumberVerificationButtonLoading 
+                                      ? SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton(
+                                            onPressed: _isButtonDisabled 
+                                              ? null // Deshabilitar botón si ya está procesando
+                                              : () {
+                                                // Prevenir múltiples clics
+                                                if (_isMultiTapping()) {
+                                                  return;
+                                                }
+                                                
+                                                // Desactivar botón al iniciar proceso
+                                                setState(() {
+                                                  _isButtonDisabled = true;
+                                                });
+                                                
+                                                try {
+                                                  final String phoneText = _phoneController.text.trim();
+                                                  final (isValid, errorMessage) = validatePhoneNumber(phoneText);
+                                                  
+                                                  if (!isValid) {
+                                                    showCustomSnackBarHelper(errorMessage ?? 'Número inválido');
+                                                    setState(() {
+                                                      _isButtonDisabled = false;
+                                                    });
+                                                    return;
+                                                  }
+                                                  
+                                                  // Formatear número con código de país
+                                                  String phone = phoneText;
+                                                  if (!phone.startsWith('+') && countryCode != null) {
+                                                    phone = countryCode! + phone;
+                                                  } else if (!phone.startsWith('+')) {
+                                                    phone = '+1' + phone;
+                                                  }
+                                                  
+                                                  // Enviar código de verificación
+                                                  _sendVerificationCode(phone);
+                                                  
+                                                } catch (e) {
+                                                  // Capturar cualquier excepción no prevista
+                                                  showCustomSnackBarHelper('Error al procesar la solicitud: $e');
+                                                  debugPrint('Error en validación de teléfono: $e');
+                                                  
+                                                  // Restaurar estado del botón en caso de error
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _isButtonDisabled = false;
+                                                    });
+                                                  }
+                                                }
+                                              },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: _isButtonDisabled
+                                                ? Theme.of(context).primaryColor.withOpacity(0.7) // Color atenuado cuando está deshabilitado
+                                                : Theme.of(context).primaryColor,
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(vertical: 16),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              elevation: 0,
+                                            ),
+                                            child: Text(
+                                              'Continuar',
+                                              style: rubikMedium.copyWith(fontSize: 16),
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Container(
+                                            width: 24,
+                                            height: 24,
+                                            margin: const EdgeInsets.all(16),
+                                            child: CircularProgressIndicator(
+                                              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        ),
+                                      
+                                      const SizedBox(height: 24),
+                                      
+                                      // Texto de política de privacidad
+                                      Text(
+                                        'Al continuar, aceptas nuestros Términos de Servicio y Política de Privacidad',
+                                        style: rubikRegular.copyWith(
+                                          fontSize: 12,
+                                          color: Theme.of(context).hintColor,
+                                          height: 1.5,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      
+                                      // Botón para cancelar (si aplicable)
+                                      if (Navigator.canPop(context))
+                                        Center(
+                                          child: TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            style: TextButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'Cancelar',
+                                              style: rubikMedium.copyWith(
+                                                color: Theme.of(context).primaryColor,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -573,455 +886,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       ),
     );
   }
-
-  /// Builds the main login form container with all input fields
-  Widget _buildLoginForm(bool isDesktop, double width, bool isDarkMode) {
-    return Container(
-      width: isDesktop ? 480 : width,
-      margin: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 0 : Dimensions.paddingSizeLarge,
-        vertical: Dimensions.paddingSizeLarge,
-      ),
-      padding: isDesktop 
-        ? const EdgeInsets.all(40) 
-        : const EdgeInsets.all(Dimensions.paddingSizeLarge),
-      decoration: isDesktop ? BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          )
-        ],
-      ) : null,
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) => Form(
-          key: _formKeyLogin,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center, 
-            children: [
-              // Logo del conejo
-              Container(
-                height: 120,
-                width: 120,
-                margin: const EdgeInsets.only(bottom: 15),
-                child: Image.asset(
-                  Images.logo,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              
-              // Mensaje principal persuasivo
-              Text(
-                'Tus platos favoritos a un clic',
-                style: rubikBold.copyWith(
-                  fontSize: 24,
-                  color: Theme.of(context).primaryColor,
-                  height: 1.2,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Subtítulo persuasivo
-              Text(
-                'Ingresa tu número y comienza a disfrutar',
-                style: rubikRegular.copyWith(
-                  fontSize: 16,
-                  color: Theme.of(context).hintColor,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              
-              // Texto contextual de confianza
-              Padding(
-                padding: const EdgeInsets.only(top: 5),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.lock_outline,
-                      size: 12,
-                      color: Theme.of(context).hintColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Solo necesitamos tu número para actualizaciones',
-                      style: rubikRegular.copyWith(
-                        fontSize: 12,
-                        color: Theme.of(context).hintColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 30),
-              
-              // Phone input field con badge de seguridad
-              _buildPhoneInput(isDarkMode),
-              
-              const SizedBox(height: 12),
-              
-              // Error message display
-              _buildErrorMessage(authProvider),
-              
-              const SizedBox(height: 24),
-              
-              // Continue button mejorado
-              _buildContinueButton(authProvider),
-              
-              const SizedBox(height: 20),
-              
-              // Elemento de prueba social
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.people_outline,
-                      size: 16,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Únete a +10,000 usuarios satisfechos',
-                      style: rubikMedium.copyWith(
-                        fontSize: 12,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 15),
-              
-              // Terms and privacy policy text
-              Text(
-                'Al continuar, aceptas nuestros Términos de Servicio y Política de Privacidad',
-                style: rubikRegular.copyWith(
-                  fontSize: 12,
-                  color: Theme.of(context).hintColor,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              
-              // Cancel button (if applicable)
-              if (Navigator.canPop(context)) _buildCancelButton(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Builds the phone input field with country code picker and security badge
-  Widget _buildPhoneInput(bool isDarkMode) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  'Número de teléfono',
-                  style: rubikMedium.copyWith(
-                    fontSize: 14,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                ),
-              ),
-            ),
-            // Badge de seguridad
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: Colors.green.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.verified_user,
-                    color: Colors.green,
-                    size: 12,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    '100% Seguro',
-                    style: rubikMedium.copyWith(
-                      color: Colors.green,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: isDarkMode
-                ? Colors.grey[900]
-                : Colors.grey[50],
-            border: Border.all(
-              color: Colors.grey.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Country code picker
-              Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  border: Border(
-                    right: BorderSide(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: CountryCodePicker(
-                  onChanged: (CountryCode value) {
-                    setState(() {
-                      countryCode = value.dialCode;
-                    });
-                  },
-                  initialSelection: countryCode?.replaceAll('+', '') ?? 'US',
-                  showDropDownButton: true,
-                  padding: EdgeInsets.zero,
-                  showFlagMain: true,
-                  dialogBackgroundColor: Theme.of(context).cardColor,
-                  flagWidth: 22,
-                  textStyle: rubikRegular.copyWith(
-                    fontSize: 16,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                ),
-              ),
-              
-              // Phone number input field
-              Expanded(
-                child: TextFormField(
-                  controller: _phoneController,
-                  focusNode: _phoneFocus,
-                  style: rubikRegular.copyWith(
-                    fontSize: 16,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.done,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  maxLength: 15,
-                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                  decoration: InputDecoration(
-                    hintText: '123 456 7890',
-                    hintStyle: rubikRegular.copyWith(
-                      color: Theme.of(context).hintColor,
-                      fontSize: 16,
-                    ),
-                    isDense: true,
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Builds the error message display
-  Widget _buildErrorMessage(AuthProvider authProvider) {
-    if (authProvider.loginErrorMessage == null || authProvider.loginErrorMessage!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16, top: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.error.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: Theme.of(context).colorScheme.error,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              authProvider.loginErrorMessage ?? "",
-              style: rubikRegular.copyWith(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds the continue button or loading indicator with improved CTA
-  Widget _buildContinueButton(AuthProvider authProvider) {
-    if (authProvider.isLoading || authProvider.isPhoneNumberVerificationButtonLoading) {
-      return Center(
-        child: Container(
-          width: 24,
-          height: 24,
-          margin: const EdgeInsets.all(16),
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
-            strokeWidth: 2,
-          ),
-        ),
-      );
-    }
-    
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isButtonDisabled 
-          ? null
-          : _onContinuePressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _isButtonDisabled
-            ? Theme.of(context).primaryColor.withOpacity(0.7)
-            : Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '¡Comenzar ahora!',
-              style: rubikBold.copyWith(fontSize: 16),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.arrow_forward_rounded,
-              size: 18,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Builds the cancel button
-  Widget _buildCancelButton() {
-    return Center(
-      child: TextButton(
-        onPressed: () => Navigator.pop(context),
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: Text(
-          'Cancelar',
-          style: rubikMedium.copyWith(
-            color: Theme.of(context).primaryColor,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Handles continue button press
-  void _onContinuePressed() {
-    // Prevent multiple taps
-    if (_isMultiTapping()) {
-      return;
-    }
-    
-    // Disable button while processing
-    setState(() {
-      _isButtonDisabled = true;
-    });
-    
-    try {
-      final String phoneText = _phoneController.text.trim();
-      final (isValid, errorMessage) = validatePhoneNumber(phoneText);
-      
-      if (!isValid) {
-        showCustomSnackBarHelper(errorMessage ?? 'Número inválido');
-        setState(() {
-          _isButtonDisabled = false;
-        });
-        return;
-      }
-      
-      // Format phone number with country code
-      String phone = phoneText;
-      if (!phone.startsWith('+') && countryCode != null) {
-        phone = countryCode! + phone;
-      } else if (!phone.startsWith('+')) {
-        phone = '+1' + phone;
-      }
-      
-      // Send verification code
-      _sendVerificationCode(phone);
-      
-    } catch (e) {
-      // Catch any unforeseen exceptions
-      showCustomSnackBarHelper('Error al procesar la solicitud: $e');
-      debugPrint('Phone validation error: $e');
-      
-      // Reset button state on error
-      if (mounted) {
-        setState(() {
-          _isButtonDisabled = false;
-        });
-      }
-    }
-  }
 }
 
-/// Model for handling API responses
+// Modelo para manejar respuestas de API
 class ApiResponseModel {
   final bool success;
   final String? message;
@@ -1030,7 +897,6 @@ class ApiResponseModel {
   final int? userId;
   final Map<String, dynamic>? data;
   
-  /// Creates an API response model with required success flag and optional fields
   ApiResponseModel({
     required this.success,
     this.message,
@@ -1040,7 +906,6 @@ class ApiResponseModel {
     this.data,
   });
   
-  /// Creates an ApiResponseModel from JSON data
   factory ApiResponseModel.fromJson(Map<String, dynamic> json) {
     return ApiResponseModel(
       success: json['success'] ?? false,
@@ -1052,7 +917,6 @@ class ApiResponseModel {
     );
   }
   
-  /// Converts the model to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'success': success,
