@@ -6,6 +6,7 @@ import 'package:flutter_restaurant/features/auth/widgets/login_form_widget.dart'
 import 'package:flutter_restaurant/features/auth/widgets/otp_verification_dialog.dart';
 import 'package:flutter_restaurant/helper/router_helper.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_restaurant/localization/language_constrants.dart';
 
 /// A screen that handles user authentication through phone number verification.
 /// 
@@ -167,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               const Icon(Icons.error_outline, color: Colors.red, size: 48),
               const SizedBox(height: 16),
               Text(
-                'Error de inicialización',
+                getTranslated('initialization_error', context)!,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
@@ -187,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   });
                   _initializeServices();
                 },
-                child: const Text('Reintentar'),
+                child: Text(getTranslated('retry', context)!),
               ),
             ],
           ),
@@ -210,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
               Text(
-                'Cargando...',
+                getTranslated('loading', context)!,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
@@ -233,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               const Icon(Icons.error_outline, color: Colors.red, size: 48),
               const SizedBox(height: 16),
               Text(
-                'Error al cargar el servicio de autenticación',
+                getTranslated('auth_service_load_error', context)!,
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
@@ -243,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   setState(() {});
                   _initializeServices();
                 },
-                child: const Text('Reintentar'),
+                child: Text(getTranslated('retry', context)!),
               ),
             ],
           ),
@@ -313,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al mostrar verificación: Servicio no disponible'),
+          content: Text(getTranslated('otp_service_unavailable_error', context)!),
           backgroundColor: Colors.red,
         ),
       );
@@ -337,7 +338,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error al mostrar diálogo de verificación: $error'),
+              content: Text(getTranslated('otp_dialog_display_error', context)!),
               backgroundColor: Colors.red,
             ),
           );
@@ -348,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al procesar verificación: $e'),
+            content: Text(getTranslated('otp_processing_error', context)!),
             backgroundColor: Colors.red,
           ),
         );
@@ -369,7 +370,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al navegar a la página principal: $e'),
+            content: Text(getTranslated('navigation_error', context)!),
             backgroundColor: Colors.red,
           ),
         );

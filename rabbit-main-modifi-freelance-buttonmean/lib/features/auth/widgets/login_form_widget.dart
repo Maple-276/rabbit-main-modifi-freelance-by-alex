@@ -7,6 +7,7 @@ import 'package:flutter_restaurant/utill/dimensions.dart';
 import 'package:flutter_restaurant/utill/images.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_restaurant/localization/language_constrants.dart';
 
 /// Widget that displays the login form with phone input and persuasive UI elements
 class LoginFormWidget extends StatefulWidget {
@@ -85,7 +86,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
               
               // Mensaje principal persuasivo
               Text(
-                'Tus platos favoritos a un clic',
+                getTranslated('headline_favorites_one_click', context)!,
                 style: rubikBold.copyWith(
                   fontSize: 24,
                   color: Theme.of(context).primaryColor,
@@ -98,7 +99,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
               
               // Subtítulo persuasivo
               Text(
-                'Ingresa tu número y comienza a disfrutar',
+                getTranslated('subtitle_enter_number_enjoy', context)!,
                 style: rubikRegular.copyWith(
                   fontSize: 16,
                   color: Theme.of(context).hintColor,
@@ -120,7 +121,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Solo necesitamos tu número para actualizaciones',
+                      getTranslated('info_only_number_for_updates', context)!,
                       style: rubikRegular.copyWith(
                         fontSize: 12,
                         color: Theme.of(context).hintColor,
@@ -174,7 +175,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      'Únete a +10,000 usuarios satisfechos',
+                      getTranslated('social_proof_join_users', context)!,
                       style: rubikMedium.copyWith(
                         fontSize: 12,
                         color: Theme.of(context).primaryColor,
@@ -188,7 +189,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
               
               // Terms and privacy policy text
               Text(
-                'Al continuar, aceptas nuestros Términos de Servicio y Política de Privacidad',
+                getTranslated('legal_terms_privacy', context)!,
                 style: rubikRegular.copyWith(
                   fontSize: 12,
                   color: Theme.of(context).hintColor,
@@ -282,7 +283,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '¡Comenzar ahora!',
+              getTranslated('button_start_now', context)!,
               style: rubikBold.copyWith(fontSize: 16),
             ),
             const SizedBox(width: 8),
@@ -308,7 +309,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
           ),
         ),
         child: Text(
-          'Cancelar',
+          getTranslated('cancel', context)!,
           style: rubikMedium.copyWith(
             color: Theme.of(context).primaryColor,
             fontSize: 14,
@@ -353,7 +354,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
       final (isValid, errorMessage) = widget.authService.validatePhoneNumber(phoneText);
       
       if (!isValid) {
-        showCustomSnackBarHelper(errorMessage ?? 'Número inválido');
+        showCustomSnackBarHelper(errorMessage ?? getTranslated('error_invalid_number', context)!);
         setState(() {
           _isButtonDisabled = false;
         });
@@ -370,8 +371,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
       _sendVerificationCode(formattedPhone);
       
     } catch (e) {
-      // Catch any unforeseen exceptions
-      showCustomSnackBarHelper('Error al procesar la solicitud: $e');
+      showCustomSnackBarHelper(getTranslated('error_processing_request', context)!);
       debugPrint('Phone validation error: $e');
       
       // Reset button state on error
@@ -395,22 +395,20 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
       });
       
       if (result.success) {
-        showCustomSnackBarHelper(
-          'Código de verificación enviado a $phone',
-          isError: false
-        );
+        String successMsg = getTranslated('success_otp_sent_to_phone', context)!.replaceAll('{phoneNumber}', phone);
+        showCustomSnackBarHelper(successMsg, isError: false);
         
         // Call the OTP sent callback with phone and temp token
         widget.onOtpSent(phone, result.tempToken ?? '');
       } else {
-        showCustomSnackBarHelper(result.message ?? 'Error al enviar código de verificación');
+        showCustomSnackBarHelper(result.message ?? getTranslated('error_sending_otp', context)!);
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isButtonDisabled = false;
         });
-        showCustomSnackBarHelper('Error al procesar la solicitud: $e', isError: true);
+        showCustomSnackBarHelper(getTranslated('error_processing_request', context)!, isError: true);
       }
     }
   }
