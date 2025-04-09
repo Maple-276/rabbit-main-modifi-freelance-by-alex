@@ -1,5 +1,3 @@
-
-
 class PlaceOrderBody {
   List<Cart>? _cart;
   double? _couponDiscountAmount;
@@ -36,8 +34,8 @@ class PlaceOrderBody {
         required String? orderType,
         required String paymentMethod,
         required int? branchId,
-        required String deliveryTime,
-        required String deliveryDate,
+        String? deliveryTime,
+        String? deliveryDate,
         required String orderNote,
         required double distance,
         required String isPartial,

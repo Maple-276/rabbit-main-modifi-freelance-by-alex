@@ -156,29 +156,41 @@ class ConfirmButtonWidget extends StatelessWidget {
                           ));
                         }
 
+                        // Get selected date and time from provider
+                        DateTime orderDate = checkoutProvider.selectDateSlot == 0 ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
+                        String formattedDate = DateFormat('yyyy-MM-dd').format(orderDate);
+                        String formattedTime = '';
+                        if (checkoutProvider.timeSlots != null && checkoutProvider.timeSlots!.isNotEmpty && checkoutProvider.selectTimeSlot >= 0) {
+                           TimeOfDay time = TimeOfDay.fromDateTime(checkoutProvider.timeSlots![checkoutProvider.selectTimeSlot].startTime!);
+                           formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                        }
+
+
                         PlaceOrderBody placeOrderBody = PlaceOrderBody(
-                          cart: carts, couponDiscountAmount: Provider.of<CouponProvider>(context, listen: false).discount,
+                          cart: carts,
+                          couponDiscountAmount: Provider.of<CouponProvider>(context, listen: false).discount,
                           couponDiscountTitle: couponCode,
-                          deliveryAddressId: !takeAway ? Provider.of<LocationProvider>(context, listen: false)
-                              .addressList![checkoutProvider.addressIndex].id : 0,
+                          deliveryAddressId: Provider.of<LocationProvider>(context, listen: false)
+                              .addressList![checkoutProvider.addressIndex].id,
                           orderAmount: double.parse(orderAmount.toStringAsFixed(2)),
-                          orderNote: noteController.text, orderType: orderType.name.camelCaseToSnakeCase(),
+                          orderNote: noteController.text,
+                          orderType: OrderType.delivery.name.camelCaseToSnakeCase(),
                           paymentMethod: checkoutProvider.selectedOfflineValue != null
                               ? 'offline_payment' : checkoutProvider.selectedPaymentMethod!.getWay!,
                           couponCode: couponCode,
-                          distance: takeAway ? 0 : checkoutProvider.distance,
+                          distance: checkoutProvider.distance,
                           branchId: branchProvider.getBranch()?.id,
-                          deliveryDate: DateFormat('yyyy-MM-dd').format(scheduleStartDate),
-                          paymentInfo: checkoutProvider.selectedOfflineValue != null ?  OfflinePaymentInfo(
+                          deliveryDate: formattedDate,
+                          deliveryTime: formattedTime,
+                          paymentInfo: checkoutProvider.selectedOfflineValue != null ? OfflinePaymentInfo(
                             methodFields: CheckOutHelper.getOfflineMethodJson(checkoutProvider.selectedOfflineMethod?.methodFields),
                             methodInformation: checkoutProvider.selectedOfflineValue,
                             paymentName: checkoutProvider.selectedOfflineMethod?.methodName,
                             paymentNote: checkoutProvider.selectedOfflineMethod?.paymentNote,
                           ) : null,
-                          deliveryTime: (checkoutProvider.selectTimeSlot == 0 && checkoutProvider.selectDateSlot == 0) ? 'now' : DateFormat('HH:mm').format(scheduleStartDate),
                           isPartial: checkoutProvider.partialAmount == null ? '0' : '1' ,
                           isCutleryRequired: '${isCutlery ? 1 : 0}',
-                          selectedDeliveryArea: locationProvider.selectedAreaID == -1 || checkoutProvider.orderType == OrderType.takeAway? null  : locationProvider.selectedAreaID,
+                          selectedDeliveryArea: locationProvider.selectedAreaID == -1 ? null : locationProvider.selectedAreaID,
                         );
 
                         if(placeOrderBody.paymentMethod == 'wallet_payment'

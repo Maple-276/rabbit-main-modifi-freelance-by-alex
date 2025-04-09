@@ -6,6 +6,7 @@ import 'package:flutter_restaurant/features/auth/services/auth_service.dart';
 import 'package:flutter_restaurant/helper/custom_snackbar_helper.dart';
 import 'package:flutter_restaurant/helper/router_helper.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
+import 'package:intl/intl.dart';
 
 /// A dialog widget for OTP verification
 class OtpVerificationDialog extends StatefulWidget {
