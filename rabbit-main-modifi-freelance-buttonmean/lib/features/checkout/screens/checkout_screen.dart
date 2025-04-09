@@ -186,6 +186,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               physics: const BouncingScrollPhysics(),
                               itemCount: checkoutProvider.timeSlots!.length,
                               itemBuilder: (context, index) {
+                                final SplashProvider splashProvider = Provider.of<SplashProvider>(context, listen: false);
                                 return SlotWidget(
                                   title: (
                                       index == 0 && checkoutProvider.selectDateSlot == 0  && splashProvider.isRestaurantOpenNow(context))
@@ -399,7 +400,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       checkoutProvider.initializeTimeSlot(context).then((value) {
         checkoutProvider.sortTime();
-
       });
       await locationProvider.initAddressList();
 
@@ -408,7 +408,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if(_isLoggedIn) {
         addressModel=  await locationProvider.getDefaultAddress();
       }
-      await CheckOutHelper.selectDeliveryAddressAuto(orderType: checkoutProvider.orderType, isLoggedIn: (_isLoggedIn || isGuestCheckout), lastAddress: addressModel);
+      await CheckOutHelper.selectDeliveryAddressAuto(
+        orderType: checkoutProvider.orderType, 
+        isLoggedIn: (_isLoggedIn || isGuestCheckout), 
+        lastAddress: addressModel
+      );
 
       deliveryCharge = CheckOutHelper.getDeliveryCharge(
           splashProvider : splashProvider,

@@ -25,10 +25,6 @@ class CheckoutProvider extends ChangeNotifier {
   bool _isLoading = false;
   OrderType _orderType = OrderType.delivery;
   int _branchIndex = 0;
-  List<TimeSlotModel>? _timeSlots;
-  List<TimeSlotModel>? _allTimeSlots;
-  int _selectDateSlot = 0;
-  int _selectTimeSlot = 0;
   double _distance = -1;
   PaymentMethod? _paymentMethod;
   PaymentMethod? _selectedPaymentMethod;
@@ -39,6 +35,10 @@ class CheckoutProvider extends ChangeNotifier {
   bool _isCutlerySelected = false;
   CheckOutModel? _checkOutData;
   double _deliveryCharge = 0;
+  List<TimeSlotModel>? _timeSlots;
+  List<TimeSlotModel>? _allTimeSlots;
+  int _selectDateSlot = 0;
+  int _selectTimeSlot = 0;
 
 
   bool paymentVisibility = true;
@@ -52,10 +52,6 @@ class CheckoutProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   OrderType get orderType => _orderType;
   int get branchIndex => _branchIndex;
-  List<TimeSlotModel>? get timeSlots => _timeSlots;
-  List<TimeSlotModel>? get allTimeSlots => _allTimeSlots;
-  int get selectDateSlot => _selectDateSlot;
-  int get selectTimeSlot => _selectTimeSlot;
   double get distance => _distance;
   PaymentMethod? get paymentMethod => _paymentMethod;
   PaymentMethod? get selectedPaymentMethod => _selectedPaymentMethod;
@@ -66,6 +62,10 @@ class CheckoutProvider extends ChangeNotifier {
   bool get isCutlerySelected => _isCutlerySelected;
   CheckOutModel? get getCheckOutData => _checkOutData;
   double get deliveryCharge => _deliveryCharge;
+  List<TimeSlotModel>? get timeSlots => _timeSlots;
+  List<TimeSlotModel>? get allTimeSlots => _allTimeSlots;
+  int get selectDateSlot => _selectDateSlot;
+  int get selectTimeSlot => _selectTimeSlot;
 
 
   set setPartialAmount(double? value)=> _partialAmount = value;
@@ -159,18 +159,15 @@ class CheckoutProvider extends ChangeNotifier {
     clearOfflinePayment();
     _partialAmount = null;
     _distance = -1;
+    _timeSlots = null;
+    _allTimeSlots = null;
+    _selectDateSlot = 0;
+    _selectTimeSlot = 0;
     if(isUpdate){
       notifyListeners();
     }
   }
 
-
-  void setOrderType(OrderType type, {bool notify = true}) {
-    _orderType = type;
-    if(notify) {
-      notifyListeners();
-    }
-  }
 
   void setBranchIndex(int index) {
     _branchIndex = index;
@@ -178,108 +175,6 @@ class CheckoutProvider extends ChangeNotifier {
     _distance = -1;
     notifyListeners();
   }
-
-  Future<void> initializeTimeSlot(BuildContext context) async {
-   final scheduleTime =  Provider.of<SplashProvider>(context, listen: false).configModel!.restaurantScheduleTime!;
-   int? duration = Provider.of<SplashProvider>(context, listen: false).configModel!.scheduleOrderSlotDuration;
-    _timeSlots = [];
-    _allTimeSlots = [];
-    _selectDateSlot = 0;
-    int minutes = 0;
-    DateTime now = DateTime.now();
-    for(int index = 0; index < scheduleTime.length; index++) {
-      DateTime openTime = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].openingTime!).hour,
-        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].openingTime!).minute,
-      );
-
-      DateTime closeTime = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].closingTime!).hour,
-        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].closingTime!).minute,
-      );
-
-      if(closeTime.difference(openTime).isNegative) {
-        minutes = openTime.difference(closeTime).inMinutes;
-      }else {
-        minutes = closeTime.difference(openTime).inMinutes;
-      }
-      if(duration! > 0 && minutes > duration) {
-        DateTime time = openTime;
-        for(;;) {
-          if(time.isBefore(closeTime)) {
-            DateTime start = time;
-            DateTime end = start.add(Duration(minutes: duration));
-            if(end.isAfter(closeTime)) {
-              end = closeTime;
-            }
-            _timeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: start, endTime: end));
-            _allTimeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: start, endTime: end));
-            time = time.add(Duration(minutes: duration));
-          }else {
-            break;
-          }
-        }
-      }else {
-        _timeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: openTime, endTime: closeTime));
-        _allTimeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: openTime, endTime: closeTime));
-      }
-    }
-    validateSlot(_allTimeSlots!, 0, notify: false);
-  }
-  void sortTime() {
-    _timeSlots!.sort((a, b){
-      return a.startTime!.compareTo(b.startTime!);
-    });
-
-    _allTimeSlots!.sort((a, b){
-      return a.startTime!.compareTo(b.startTime!);
-    });
-  }
-
-  void updateTimeSlot(int index) {
-    _selectTimeSlot = index;
-    notifyListeners();
-  }
-
-  void updateDateSlot(int index) {
-    _selectDateSlot = index;
-    if(_allTimeSlots != null) {
-      validateSlot(_allTimeSlots!, index);
-    }
-    notifyListeners();
-  }
-
-
-
-  void validateSlot(List<TimeSlotModel> slots, int dateIndex, {bool notify = true}) {
-    _timeSlots = [];
-    int day = 0;
-    if(dateIndex == 0) {
-      day = DateTime.now().weekday;
-    }else {
-      day = DateTime.now().add(const Duration(days: 1)).weekday;
-    }
-    if(day == 7) {
-      day = 0;
-    }
-    for (var slot in slots) {
-      if (day == slot.day && (dateIndex == 0 ? slot.endTime!.isAfter(DateTime.now()) : true)) {
-        _timeSlots!.add(slot);
-      }
-    }
-
-
-    if(notify) {
-      notifyListeners();
-    }
-  }
-
 
   Future<bool> getDistanceInMeter(LatLng originLatLng, LatLng destinationLatLng) async {
     _distance = -1;
@@ -349,5 +244,122 @@ class CheckoutProvider extends ChangeNotifier {
     }
   }
 
+  void setOrderType(OrderType type, {bool notify = true}) {
+    _orderType = type;
+    if(notify) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> initializeTimeSlot(BuildContext context) async {
+   final scheduleTime =  Provider.of<SplashProvider>(context, listen: false).configModel!.restaurantScheduleTime!;
+   int? duration = Provider.of<SplashProvider>(context, listen: false).configModel!.scheduleOrderSlotDuration;
+    _timeSlots = [];
+    _allTimeSlots = [];
+    _selectDateSlot = 0;
+    int minutes = 0;
+    DateTime now = DateTime.now();
+    for(int index = 0; index < scheduleTime.length; index++) {
+      DateTime openTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].openingTime!).hour,
+        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].openingTime!).minute,
+      );
+
+      DateTime closeTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].closingTime!).hour,
+        DateConverterHelper.convertStringTimeToDate(scheduleTime[index].closingTime!).minute,
+      );
+
+      if(closeTime.difference(openTime).isNegative) {
+        minutes = openTime.difference(closeTime).inMinutes;
+      }else {
+        minutes = closeTime.difference(openTime).inMinutes;
+      }
+      if(duration! > 0 && minutes > duration) {
+        DateTime time = openTime;
+        for(;;) {
+          if(time.isBefore(closeTime)) {
+            DateTime start = time;
+            DateTime end = start.add(Duration(minutes: duration));
+            if(end.isAfter(closeTime)) {
+              end = closeTime;
+            }
+            _timeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: start, endTime: end));
+            _allTimeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: start, endTime: end));
+            time = time.add(Duration(minutes: duration));
+          }else {
+            break;
+          }
+        }
+      }else {
+        _timeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: openTime, endTime: closeTime));
+        _allTimeSlots!.add(TimeSlotModel(day: int.tryParse(scheduleTime[index].day!), startTime: openTime, endTime: closeTime));
+      }
+    }
+    if(_allTimeSlots != null){
+       validateSlot(_allTimeSlots!, 0, notify: false);
+    }
+  }
+
+  void sortTime() {
+    if(_timeSlots != null){
+        _timeSlots!.sort((a, b){
+          return a.startTime!.compareTo(b.startTime!);
+        });
+    }
+    if(_allTimeSlots != null){
+      _allTimeSlots!.sort((a, b){
+        return a.startTime!.compareTo(b.startTime!);
+      });
+    }
+  }
+
+  void updateTimeSlot(int index) {
+    _selectTimeSlot = index;
+    notifyListeners();
+  }
+
+  void updateDateSlot(int index) {
+    _selectDateSlot = index;
+    if(_allTimeSlots != null) {
+      validateSlot(_allTimeSlots!, index);
+    }
+    notifyListeners();
+  }
+
+  void validateSlot(List<TimeSlotModel> slots, int dateIndex, {bool notify = true}) {
+    _timeSlots = [];
+    int day = 0;
+    if(dateIndex == 0) {
+      day = DateTime.now().weekday;
+    }else {
+      day = DateTime.now().add(const Duration(days: 1)).weekday;
+    }
+    if(day == 7) {
+      day = 0;
+    }
+
+    for (var slot in slots) {
+      if (day == slot.day && (dateIndex == 0 ? slot.endTime!.isAfter(DateTime.now()) : true)) {
+        _timeSlots!.add(slot);
+      }
+    }
+
+    if(_timeSlots != null && _timeSlots!.isNotEmpty) {
+       _selectTimeSlot = 0;
+    } else {
+       _selectTimeSlot = -1;
+    }
+
+    if(notify) {
+      notifyListeners();
+    }
+  }
 
 }
