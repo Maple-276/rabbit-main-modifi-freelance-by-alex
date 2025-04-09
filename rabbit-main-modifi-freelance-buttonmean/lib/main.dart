@@ -255,56 +255,76 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Define the page transitions theme
+    const pageTransitionsTheme = PageTransitionsTheme(
+      builders: <TargetPlatform, PageTransitionsBuilder>{
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    );
 
+    // Get supported locales from AppConstants
     List<Locale> locals = [];
     for (var language in AppConstants.languages) {
       locals.add(Locale(language.languageCode!, language.countryCode));
     }
 
+
     return Consumer<SplashProvider>(
-      builder: (context, splashProvider, child){
-
-        return (kIsWeb && splashProvider.configModel == null) ? const SizedBox() : MaterialApp.router(
-          routerConfig: RouterHelper.goRoutes,
-          title: splashProvider.configModel != null ? splashProvider.configModel!.restaurantName ?? '' : AppConstants.appName,
-          debugShowCheckedModeBanner: false,
-          theme: Provider.of<ThemeProvider>(context).darkTheme ? dark : light,
-          locale: Provider.of<LocalizationProvider>(context).locale,
-          localizationsDelegates: const [
-            AppLocalization.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: locals,
-          scrollBehavior: const MaterialScrollBehavior().copyWith(dragDevices: {
-            PointerDeviceKind.mouse, PointerDeviceKind.touch, PointerDeviceKind.stylus, PointerDeviceKind.unknown
-          }),
-          builder: (context, child)=> MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(MediaQuery.sizeOf(context).width < 380 ?  0.9 : 1)),
-            child: Scaffold(
-              body: Stack(
-                children: [
-                  child!,
-
-                  if(ResponsiveHelper.isDesktop(context)) const Positioned.fill(
-                    child: Align(alignment: Alignment.bottomRight, child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 50, horizontal: 20), child: ThirdPartyChatWidget(),
-                    )),
-                  ),
-
-                  if(kIsWeb && (splashProvider.configModel?.cookiesManagement?.status ?? false)
-                      && !splashProvider.getAcceptCookiesStatus(splashProvider.configModel?.cookiesManagement?.content)
-                      && splashProvider.cookiesShow)
-                    const Positioned.fill(child: Align(alignment: Alignment.bottomCenter, child: CookiesWidget())),
-
-                ],
+      builder: (context, splashProvider, child) {
+         // Check if configModel is null (for web initial load)
+         bool isLoadingConfig = kIsWeb && splashProvider.configModel == null;
+         
+        return Consumer<LocalizationProvider>(
+          builder: (context, localizationController, child) {
+            return isLoadingConfig ? const SizedBox() : MaterialApp.router( // Return SizedBox if loading config on web
+              title: splashProvider.configModel?.restaurantName ?? AppConstants.appName,
+              // Use the correct router instance name
+              routerConfig: RouterHelper.goRoutes, 
+              debugShowCheckedModeBanner: false,
+              theme: Provider.of<ThemeProvider>(context).darkTheme
+                  // Use the theme variable directly and copyWith
+                  ? dark.copyWith(pageTransitionsTheme: pageTransitionsTheme) 
+                  : light.copyWith(pageTransitionsTheme: pageTransitionsTheme),
+              locale: localizationController.locale,
+              localizationsDelegates: const [
+                AppLocalization.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              // Use the list of locales generated from AppConstants
+              supportedLocales: locals, 
+              scrollBehavior: const MaterialScrollBehavior().copyWith(
+                dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch, PointerDeviceKind.stylus, PointerDeviceKind.unknown},
               ),
-            ),
-          ),
+               // Restore the original builder for Scaffold, Stack, Cookies, etc.
+              builder: (context, child)=> MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(MediaQuery.sizeOf(context).width < 380 ?  0.9 : 1)),
+                child: Scaffold(
+                  body: Stack(
+                    children: [
+                      child!,
+    
+                      if(ResponsiveHelper.isDesktop(context)) const Positioned.fill(
+                        child: Align(alignment: Alignment.bottomRight, child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 50, horizontal: 20), child: ThirdPartyChatWidget(),
+                        )),
+                      ),
+    
+                      if(kIsWeb && (splashProvider.configModel?.cookiesManagement?.status ?? false)
+                          && !splashProvider.getAcceptCookiesStatus(splashProvider.configModel?.cookiesManagement?.content)
+                          && splashProvider.cookiesShow)
+                        const Positioned.fill(child: Align(alignment: Alignment.bottomCenter, child: CookiesWidget())),
+    
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
-
     );
   }
 }

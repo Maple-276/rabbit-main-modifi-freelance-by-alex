@@ -28,7 +28,7 @@ class PaymentDetailsWidget extends StatelessWidget {
           boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withOpacity(0.5), blurRadius: Dimensions.radiusDefault)],
         ),
         padding:  const EdgeInsets.all(Dimensions.paddingSizeLarge),
-        child: Column(children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text(getTranslated('payment_method', context)!, style: rubikBold.copyWith(
               fontSize: ResponsiveHelper.isDesktop(context) ? Dimensions.fontSizeLarge : Dimensions.fontSizeDefault,
@@ -46,26 +46,26 @@ class PaymentDetailsWidget extends StatelessWidget {
           const SizedBox(height: Dimensions.paddingSizeSmall),
 
           const Divider(thickness: 0.5),
+          const SizedBox(height: Dimensions.paddingSizeDefault),
 
-           if(checkoutProvider.partialAmount != null || !showPayment ) Padding(
-             padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeDefault),
-             child: InkWell(
-               onTap: ()=> ResponsiveHelper.showDialogOrBottomSheet(context, PaymentMethodBottomSheetWidget(totalPrice: total)),
-               child: Row(children: [
-                 const Icon(Icons.add_circle_outline, size: Dimensions.paddingSizeLarge),
-                 const SizedBox(width: Dimensions.paddingSizeDefault),
+          if(showPayment)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Dimensions.paddingSizeDefault),
+              child: SelectedPaymentView(total: checkoutProvider.partialAmount ?? total),
+            ),
 
-                 Text(
-                   getTranslated('add_payment_method', context)!,
-                   style: rubikSemiBold.copyWith(fontSize: ResponsiveHelper.isDesktop(context) ? Dimensions.fontSizeDefault : Dimensions.fontSizeSmall),
-                 ),
-               ]),
-             ),
-           ),
-
-           if(showPayment) SelectedPaymentView(total: checkoutProvider.partialAmount ??  total),
-
-          ]),
+          if(!showPayment && checkoutProvider.partialAmount == null) InkWell(
+            onTap: ()=> ResponsiveHelper.showDialogOrBottomSheet(context, PaymentMethodBottomSheetWidget(totalPrice: total)),
+            child: Row(children: [
+              const Icon(Icons.add_circle_outline, size: Dimensions.paddingSizeLarge),
+              const SizedBox(width: Dimensions.paddingSizeDefault),
+              Text(
+                getTranslated('add_payment_method', context)!,
+                style: rubikSemiBold.copyWith(fontSize: ResponsiveHelper.isDesktop(context) ? Dimensions.fontSizeDefault : Dimensions.fontSizeSmall),
+              ),
+            ]),
+          ),
+        ]),
       );
     });
   }

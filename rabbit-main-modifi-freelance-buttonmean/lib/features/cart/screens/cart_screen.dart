@@ -95,6 +95,8 @@ class _CartScreenState extends State<CartScreen> {
         print(distance);
         print(branchCoverage);
 
+        // --- Re-enabled Distance Coverage Check ---
+       
         if (distance > branchCoverage) {
           print("out of coverage");
 
@@ -104,7 +106,7 @@ class _CartScreenState extends State<CartScreen> {
             });
           }
 
-          // Show dialog if distance exceeds coverage
+          // TODO: Consider re-enabling the out-of-coverage dialog if needed
           // _showOutOfCoverageDialog();
         } else {
           print("in coverage");
@@ -114,12 +116,24 @@ class _CartScreenState extends State<CartScreen> {
               inCoverage = true;
             });
           }
+          // TODO: Consider re-enabling automatic branch selection if needed
           // Automatically set the nearest branch
           // await branchProvider.setBranch(nearestBranch.id!, splashProvider);
 
           // Notify listeners if necessary
           // branchProvider.notifyListeners();
         }
+       
+        // --- END Re-enabled Distance Coverage Check --- 
+        
+        /* // Removed Forced setState 
+        if (mounted) {
+           setState(() {
+             inCoverage = true; // Force coverage to true for bypass
+           });
+        }
+        */
+
       }
     }
     // } catch (e) {

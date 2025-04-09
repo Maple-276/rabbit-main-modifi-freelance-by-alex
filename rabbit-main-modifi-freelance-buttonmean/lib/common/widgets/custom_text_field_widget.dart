@@ -41,6 +41,7 @@ class CustomTextFieldWidget extends StatefulWidget {
   final Color? borderColor;
   final String? label;
   final bool isRequired;
+  final IconData? prefixIconData;
 
   final String? countryDialCode;
   final Function(CountryCode countryCode)? onCountryChanged;
@@ -70,6 +71,7 @@ class CustomTextFieldWidget extends StatefulWidget {
     this.isPassword = false,
     this.suffixIconUrl,
     this.prefixIconUrl,
+    this.prefixIconData,
     this.isSearch = false,
     this.languageProvider,
     this.inputDecoration,
@@ -142,31 +144,41 @@ class _CustomTextFieldWidgetState extends State<CustomTextFieldWidget> {
         fillColor: widget.fillColor ?? Theme.of(context).cardColor,
         hintStyle: Theme.of(context).textTheme.displayMedium!.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).hintColor.withOpacity(0.7)),
         filled: true,
-        prefixIcon: widget.isShowPrefixIcon ? Padding(
-          padding: const EdgeInsets.only(left: Dimensions.paddingSizeLarge, right: Dimensions.paddingSizeSmall),
-          child: CustomAssetImageWidget(widget.prefixIconUrl!, color: widget.prefixIconColor ?? Theme.of(context).textTheme.bodyLarge?.color),
-        ) : widget.countryDialCode != null ? Padding( padding:  EdgeInsets.only(left: widget.isShowBorder == true ?  10: 0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CodePickerWidget(
-                onChanged: widget.onCountryChanged,
-                initialSelection: widget.countryDialCode,
-                favorite: [widget.countryDialCode ?? ""],
-                showDropDownButton: true,
-                padding: EdgeInsets.zero,
-                showFlagMain: true,
-                showFlagDialog: true,
-                dialogSize: Size(Dimensions.webMaxWidth/2, size.height*0.6),
-                dialogBackgroundColor: Theme.of(context).cardColor,
-                //barrierColor: Get.isDarkMode?Colors.black.withOpacity(0.4):null,
-                textStyle: rubikRegular.copyWith(
-                  fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).textTheme.bodyLarge!.color,
-                ),
-              ),
-            ],
-          ),
-        ): null,
+        prefixIcon: widget.prefixIconData != null
+          ? Padding(
+              padding: const EdgeInsets.only(left: Dimensions.paddingSizeLarge, right: Dimensions.paddingSizeSmall),
+              child: Icon(widget.prefixIconData, color: widget.prefixIconColor ?? Theme.of(context).hintColor.withOpacity(0.7), size: 20),
+            )
+          : widget.isShowPrefixIcon
+            ? Padding(
+                padding: const EdgeInsets.only(left: Dimensions.paddingSizeLarge, right: Dimensions.paddingSizeSmall),
+                child: CustomAssetImageWidget(widget.prefixIconUrl!, color: widget.prefixIconColor ?? Theme.of(context).textTheme.bodyLarge?.color),
+              )
+            : widget.countryDialCode != null
+              ? Padding(
+                  padding: EdgeInsets.only(left: widget.isShowBorder == true ? 10 : 0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CodePickerWidget(
+                        onChanged: widget.onCountryChanged,
+                        initialSelection: widget.countryDialCode,
+                        favorite: [widget.countryDialCode ?? ""],
+                        showDropDownButton: true,
+                        padding: EdgeInsets.zero,
+                        showFlagMain: true,
+                        showFlagDialog: true,
+                        dialogSize: Size(Dimensions.webMaxWidth / 2, size.height * 0.6),
+                        dialogBackgroundColor: Theme.of(context).cardColor,
+                        textStyle: rubikRegular.copyWith(
+                          fontSize: Dimensions.fontSizeSmall,
+                          color: Theme.of(context).textTheme.bodyLarge!.color,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : null,
         prefixIconConstraints: widget.countryDialCode != null ? null : const BoxConstraints(minWidth: 23, maxHeight: 20),
         suffixIcon: widget.isShowSuffixIcon
             ? widget.isPassword

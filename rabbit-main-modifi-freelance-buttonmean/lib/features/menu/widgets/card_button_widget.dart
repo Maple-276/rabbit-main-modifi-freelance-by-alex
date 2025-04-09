@@ -27,7 +27,7 @@ class CardButtonWidget extends StatelessWidget {
             padding: const EdgeInsets.all(Dimensions.paddingSizeExtraSmall),
             child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
               CustomAssetImageWidget(image, height: 25, width: 25, color: Theme.of(context).hintColor),
-              const SizedBox(height: Dimensions.paddingSizeDefault),
+              const SizedBox(height: Dimensions.paddingSizeSmall),
 
               Text(title, style: rubikRegular.copyWith(fontSize: Dimensions.fontSizeSmall)),
             ]),

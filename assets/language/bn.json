@@ -9,5 +9,6 @@
   "error_invalid_number": "অবৈধ নম্বর",
   "error_processing_request": "অনুরোধ প্রক্রিয়া করতে ত্রুটি",
   "success_otp_sent_to_phone": "যাচাইকরণ কোড {phoneNumber} এ পাঠানো হয়েছে",
-  "error_sending_otp": "যাচাইকরণ কোড পাঠাতে ত্রুটি"
+  "error_sending_otp": "যাচাইকরণ কোড পাঠাতে ত্রুটি",
+  "category_groceries": "মুদিখানা"
 } 

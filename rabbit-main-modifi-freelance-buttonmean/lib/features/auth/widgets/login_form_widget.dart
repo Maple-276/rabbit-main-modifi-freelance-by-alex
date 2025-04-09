@@ -120,11 +120,13 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                       color: Theme.of(context).hintColor,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      getTranslated('info_only_number_for_updates', context)!,
-                      style: rubikRegular.copyWith(
-                        fontSize: 12,
-                        color: Theme.of(context).hintColor,
+                    Flexible(
+                      child: Text(
+                        getTranslated('info_only_number_for_updates', context)!,
+                        style: rubikRegular.copyWith(
+                          fontSize: 12,
+                          color: Theme.of(context).hintColor,
+                        ),
                       ),
                     ),
                   ],

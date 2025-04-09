@@ -11,6 +11,7 @@ import 'package:flutter_restaurant/features/checkout/widgets/payment_method_bott
 import 'package:flutter_restaurant/helper/checkout_helper.dart';
 import 'package:flutter_restaurant/helper/date_converter_helper.dart';
 import 'package:flutter_restaurant/helper/responsive_helper.dart';
+import 'package:flutter_restaurant/helper/price_converter_helper.dart';
 import 'package:flutter_restaurant/localization/app_localization.dart';
 import 'package:flutter_restaurant/localization/language_constrants.dart';
 import 'package:flutter_restaurant/features/auth/providers/auth_provider.dart';
@@ -53,7 +54,16 @@ class ConfirmButtonWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final BranchProvider branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final CouponProvider couponProvider = Provider.of<CouponProvider>(context, listen: false);
     final takeAway =  orderType.name.camelCaseToSnakeCase() == 'take_away';
+
+    double itemsPlusAddons = orderAmount;
+    double taxOnItemsAndAddons = 0;
+    double couponDiscount = couponProvider.discount ?? 0;
+    double deliveryFee = deliveryCharge ?? 0;
+    final double finalTotal = (orderAmount + deliveryFee) - couponDiscount;
+    final String formattedTotal = PriceConverterHelper.convertPrice(finalTotal);
+    final String buttonText = "${getTranslated('place_order', context)} - $formattedTotal";
 
     return Consumer<CheckoutProvider>(builder: (context, checkoutProvider, _) {
           return Container(
@@ -62,7 +72,7 @@ class ConfirmButtonWidget extends StatelessWidget {
             child: Consumer<OrderProvider>(
               builder: (context, orderProvider, _) => CustomButtonWidget(
                 isLoading: orderProvider.isLoading,
-                btnTxt: getTranslated('place_order', context),
+                btnTxt: buttonText,
                 onTap: () async {
                   final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
                   final ConfigModel configModel = Provider.of<SplashProvider>(context, listen: false).configModel!;
@@ -88,23 +98,27 @@ class ConfirmButtonWidget extends StatelessWidget {
                         isAvailable = false;
 
                       }else {
-                        DateTime date = checkoutProvider.selectDateSlot == 0 ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
-                        DateTime startTime = checkoutProvider.timeSlots![checkoutProvider.selectTimeSlot].startTime!;
-                        DateTime endTime = checkoutProvider.timeSlots![checkoutProvider.selectTimeSlot].endTime!;
-                        scheduleStartDate = DateTime(date.year, date.month, date.day, startTime.hour, startTime.minute+1);
-                        scheduleEndDate = DateTime(date.year, date.month, date.day, endTime.hour, endTime.minute+1);
-                        for (CartModel? cart in cartList) {
-                          if (!DateConverterHelper.isAvailable(cart!.product!.availableTimeStarts!, cart.product!.availableTimeEnds!, time: scheduleStartDate,)
-                              && !DateConverterHelper.isAvailable(cart.product!.availableTimeStarts!, cart.product!.availableTimeEnds!, time: scheduleEndDate)
-                          ) {
-                            isAvailable = false;
-                            break;
-                          }
-                        }
+                         if(checkoutProvider.selectTimeSlot >= 0 && checkoutProvider.selectTimeSlot < checkoutProvider.timeSlots!.length){
+                              DateTime date = checkoutProvider.selectDateSlot == 0 ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
+                              DateTime startTime = checkoutProvider.timeSlots![checkoutProvider.selectTimeSlot].startTime!;
+                              DateTime endTime = checkoutProvider.timeSlots![checkoutProvider.selectTimeSlot].endTime!;
+                              scheduleStartDate = DateTime(date.year, date.month, date.day, startTime.hour, startTime.minute+1);
+                              scheduleEndDate = DateTime(date.year, date.month, date.day, endTime.hour, endTime.minute+1);
+                              for (CartModel? cart in cartList) {
+                                if (!DateConverterHelper.isAvailable(cart!.product!.availableTimeStarts!, cart.product!.availableTimeEnds!, time: scheduleStartDate,)
+                                    && !DateConverterHelper.isAvailable(cart.product!.availableTimeStarts!, cart.product!.availableTimeEnds!, time: scheduleEndDate)
+                                ) {
+                                  isAvailable = false;
+                                  break;
+                                }
+                              }
+                         } else {
+                           isAvailable = false; 
+                         }
                       }
 
                       if(orderAmount < configModel.minimumOrderValue!) {
-                        showCustomSnackBarHelper('Minimum order amount is ${configModel.minimumOrderValue}');
+                        showCustomSnackBarHelper(getTranslated('Minimum order amount is ', context)! + PriceConverterHelper.convertPrice(configModel.minimumOrderValue));
                       }else if(checkoutProvider.partialAmount != null && (checkoutProvider.selectedPaymentMethod == null ? (checkoutProvider.selectedOfflineValue == null) : checkoutProvider.selectedPaymentMethod == null )){
                         ResponsiveHelper.showDialogOrBottomSheet(context, PaymentMethodBottomSheetWidget(totalPrice: orderAmount + (deliveryCharge ?? 0)));
 
@@ -114,11 +128,6 @@ class ConfirmButtonWidget extends StatelessWidget {
                         showCustomSnackBarHelper(getTranslated('one_or_more_products_are_not_available_for_this_selected_time', context));
                       }else if (!takeAway && kmWiseCharge && checkoutProvider.distance == -1) {
                         showCustomSnackBarHelper(getTranslated('delivery_fee_not_set_yet', context));
-                      }else if (splashProvider.deliveryInfoModel?.deliveryChargeSetup?.deliveryChargeType == 'area' && locationProvider.selectedAreaID == -1 && checkoutProvider.orderType != OrderType.takeAway){
-
-                       await scrollController.animateTo(0, duration: const Duration(milliseconds: 100), curve: Curves.ease);
-                       _openDropdown();
-
                       }else {
                         List<Cart> carts = [];
                         for (int index = 0; index < cartList.length; index++) {
@@ -156,15 +165,17 @@ class ConfirmButtonWidget extends StatelessWidget {
                           ));
                         }
 
-                        // Get selected date and time from provider
-                        DateTime orderDate = checkoutProvider.selectDateSlot == 0 ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
-                        String formattedDate = DateFormat('yyyy-MM-dd').format(orderDate);
+                        String formattedDate = '';
                         String formattedTime = '';
-                        if (checkoutProvider.timeSlots != null && checkoutProvider.timeSlots!.isNotEmpty && checkoutProvider.selectTimeSlot >= 0) {
-                           TimeOfDay time = TimeOfDay.fromDateTime(checkoutProvider.timeSlots![checkoutProvider.selectTimeSlot].startTime!);
-                           formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                        if (checkoutProvider.selectTimeSlot >= 0 && checkoutProvider.timeSlots != null && checkoutProvider.selectTimeSlot < checkoutProvider.timeSlots!.length) {
+                          DateTime orderDate = checkoutProvider.selectDateSlot == 0 ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
+                          formattedDate = DateFormat('yyyy-MM-dd').format(orderDate);
+                          TimeOfDay time = TimeOfDay.fromDateTime(checkoutProvider.timeSlots![checkoutProvider.selectTimeSlot].startTime!);
+                          formattedTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                        } else {
+                           DateTime orderDate = checkoutProvider.selectDateSlot == 0 ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
+                           formattedDate = DateFormat('yyyy-MM-dd').format(orderDate);
                         }
-
 
                         PlaceOrderBody placeOrderBody = PlaceOrderBody(
                           cart: carts,
@@ -174,14 +185,14 @@ class ConfirmButtonWidget extends StatelessWidget {
                               .addressList![checkoutProvider.addressIndex].id,
                           orderAmount: double.parse(orderAmount.toStringAsFixed(2)),
                           orderNote: noteController.text,
-                          orderType: OrderType.delivery.name.camelCaseToSnakeCase(),
+                          orderType: orderType.name.camelCaseToSnakeCase(),
                           paymentMethod: checkoutProvider.selectedOfflineValue != null
                               ? 'offline_payment' : checkoutProvider.selectedPaymentMethod!.getWay!,
                           couponCode: couponCode,
                           distance: checkoutProvider.distance,
                           branchId: branchProvider.getBranch()?.id,
-                          deliveryDate: formattedDate,
-                          deliveryTime: formattedTime,
+                          deliveryDate: formattedDate.isNotEmpty ? formattedDate : null,
+                          deliveryTime: formattedTime.isNotEmpty ? formattedTime : null,
                           paymentInfo: checkoutProvider.selectedOfflineValue != null ? OfflinePaymentInfo(
                             methodFields: CheckOutHelper.getOfflineMethodJson(checkoutProvider.selectedOfflineMethod?.methodFields),
                             methodInformation: checkoutProvider.selectedOfflineValue,

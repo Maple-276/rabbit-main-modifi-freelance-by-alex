@@ -61,77 +61,81 @@ class _CostSummeryWidgetState extends State<CostSummeryWidget> {
         return Column(children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Wrap the inner Column with SingleChildScrollView to allow scrolling if content overflows
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(), // Optional: nicer scroll physics
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
-              Align(alignment: Alignment.center,
-                child: Text(getTranslated('cost_summery', context)!, style: rubikBold.copyWith(
-                  fontSize: isDesktop ? Dimensions.fontSizeExtraLarge : Dimensions.fontSizeDefault,
-                  fontWeight: isDesktop ? FontWeight.w700 : FontWeight.w600,
-                )),
-              ),
-              const SizedBox(height: Dimensions.paddingSizeSmall),
-
-              const Divider(thickness: 0.08, color: Colors.black),
-              const SizedBox(height: Dimensions.paddingSizeSmall),
-
-              if (totalDiscount > 0) ...[
-                ItemViewWidget(
-                  title: getTranslated('discount', context)!,
-                  subTitle: '(-) ${PriceConverterHelper.convertPrice(totalDiscount)}',
-                  titleStyle: rubikMedium,
+                Align(alignment: Alignment.center,
+                  child: Text(getTranslated('cost_summery', context)!, style: rubikBold.copyWith(
+                    fontSize: isDesktop ? Dimensions.fontSizeExtraLarge : Dimensions.fontSizeDefault,
+                    fontWeight: isDesktop ? FontWeight.w700 : FontWeight.w600,
+                  )),
                 ),
                 const SizedBox(height: Dimensions.paddingSizeSmall),
-              ],
 
-              if (!isTakeAway && _showOptionalDetails) ...[
-                ItemViewWidget(
-                  title: getTranslated('delivery_fee', context)!,
-                  subTitle: '(+) ${PriceConverterHelper.convertPrice(deliveryCharge)}',
-                  titleStyle: rubikMedium,
-                ),
+                const Divider(thickness: 0.08, color: Colors.black),
                 const SizedBox(height: Dimensions.paddingSizeSmall),
-              ],
 
-              if (_showOptionalDetails) ...[
-                ItemViewWidget(
-                  title: getTranslated('tax', context)!,
-                  subTitle: '(+) ${PriceConverterHelper.convertPrice(tax)}',
-                  titleStyle: rubikMedium,
-                ),
-                 const SizedBox(height: Dimensions.paddingSizeSmall),
-              ],
+                if (totalDiscount > 0) ...[
+                  ItemViewWidget(
+                    title: getTranslated('discount', context)!,
+                    subTitle: '(-) ${PriceConverterHelper.convertPrice(totalDiscount)}',
+                    titleStyle: rubikMedium.copyWith(fontSize: Dimensions.fontSizeSmall),
+                  ),
+                  const SizedBox(height: Dimensions.paddingSizeExtraSmall),
+                ],
 
-              if (hasOptionalDetailsToShow) ...[
-                 Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _showOptionalDetails = !_showOptionalDetails;
-                      });
-                    },
-                    child: Text(
-                      _showOptionalDetails
-                          ? getTranslated('hide_details', context)!
-                          : getTranslated('show_details', context)!,
-                      style: rubikMedium.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).primaryColor),
+                if (!isTakeAway && _showOptionalDetails) ...[
+                  ItemViewWidget(
+                    title: getTranslated('delivery_fee', context)!,
+                    subTitle: '(+) ${PriceConverterHelper.convertPrice(deliveryCharge)}',
+                    titleStyle: rubikMedium.copyWith(fontSize: Dimensions.fontSizeSmall),
+                  ),
+                  const SizedBox(height: Dimensions.paddingSizeExtraSmall),
+                ],
+
+                if (_showOptionalDetails) ...[
+                  ItemViewWidget(
+                    title: getTranslated('tax', context)!,
+                    subTitle: '(+) ${PriceConverterHelper.convertPrice(tax)}',
+                    titleStyle: rubikMedium.copyWith(fontSize: Dimensions.fontSizeSmall),
+                  ),
+                   const SizedBox(height: Dimensions.paddingSizeExtraSmall),
+                ],
+
+                if (hasOptionalDetailsToShow) ...[
+                   Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showOptionalDetails = !_showOptionalDetails;
+                        });
+                      },
+                      child: Text(
+                        _showOptionalDetails
+                            ? getTranslated('hide_details', context)!
+                            : getTranslated('show_details', context)!,
+                        style: rubikMedium.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).primaryColor),
+                      ),
                     ),
                   ),
+                ],
+
+                const Divider(thickness: 0.08, color: Colors.black),
+                const SizedBox(height: Dimensions.paddingSizeExtraSmall),
+
+                ItemViewWidget(
+                  title: getTranslated('total_amount', context)!,
+                  subTitle: PriceConverterHelper.convertPrice(total),
+                  titleStyle: rubikSemiBold.copyWith(fontSize: Dimensions.fontSizeLarge),
+                  subTitleStyle: rubikBold.copyWith(fontSize: Dimensions.fontSizeLarge, color: Theme.of(context).primaryColor),
                 ),
-              ],
+               const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
-              const Divider(thickness: 0.08, color: Colors.black),
-              const SizedBox(height: Dimensions.paddingSizeSmall),
-
-              ItemViewWidget(
-                title: getTranslated('total_amount', context)!,
-                subTitle: PriceConverterHelper.convertPrice(total),
-                titleStyle: rubikSemiBold.copyWith(fontSize: Dimensions.fontSizeLarge),
-                subTitleStyle: rubikBold.copyWith(fontSize: Dimensions.fontSizeLarge, color: Theme.of(context).primaryColor),
-              ),
-             const SizedBox(height: Dimensions.paddingSizeDefault),
-
-            ]),
+              ]),
+            ),
           ),
 
         ]);

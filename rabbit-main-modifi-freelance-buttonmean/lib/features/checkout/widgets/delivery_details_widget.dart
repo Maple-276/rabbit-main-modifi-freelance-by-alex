@@ -133,139 +133,143 @@ class DeliveryDetailsWidget extends StatelessWidget {
                 const SizedBox(height: Dimensions.paddingSizeLarge),
               ],
 
-              if(checkoutProvider.orderType != OrderType.takeAway && splashProvider.deliveryInfoModel != null && (splashProvider.deliveryInfoModel!.deliveryChargeByArea?.isNotEmpty ?? false) && splashProvider.deliveryInfoModel?.deliveryChargeSetup?.deliveryChargeType == 'area')...[
-
+              // --- Uncommented Area Selection UI ---
+              if (checkoutProvider.orderType != OrderType.takeAway &&
+                  splashProvider.deliveryInfoModel != null &&
+                  (splashProvider.deliveryInfoModel!.deliveryChargeByArea?.isNotEmpty ?? false) &&
+                  splashProvider.deliveryInfoModel?.deliveryChargeSetup?.deliveryChargeType == 'area') ...[
                 Text(
                   getTranslated('zip_area', context)!,
                   style: rubikSemiBold.copyWith(fontSize: ResponsiveHelper.isDesktop(context) ? Dimensions.fontSizeLarge : Dimensions.fontSizeDefault),
                 ),
                 const SizedBox(height: Dimensions.paddingSizeSmall),
-
-
                 Consumer<SplashProvider>(
                   builder: (context, splashProvider, child) {
-
-
                     return Row(children: [
-
-                      Expanded(child: DropdownButtonHideUnderline(child: DropdownButton2<String>(
-
-                        key: dropdownKey,
-                        iconStyleData: IconStyleData(icon: Icon(Icons.keyboard_arrow_down_rounded, color: Theme.of(context).hintColor)),
-                        isExpanded: true,
-                        hint: Text(
-                          getTranslated('search_or_select_zip_code_area', context)!,
-                          style: rubikRegular.copyWith(fontSize: Dimensions.fontSizeDefault, color: Theme.of(context).hintColor),
-                        ),
-                        selectedItemBuilder: (BuildContext context) {
-                          return splashProvider.deliveryInfoModel!.deliveryChargeByArea!
-                              .map((DeliveryChargeByArea item) {
-                            return Row(
-                              children: [
-                                Text(
-                                  item.areaName ?? "",
-                                  style: rubikRegular.copyWith(
-                                    fontSize: Dimensions.fontSizeDefault,
-                                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                      Expanded(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton2<String>(
+                            key: dropdownKey,
+                            iconStyleData: IconStyleData(icon: Icon(Icons.keyboard_arrow_down_rounded, color: Theme.of(context).hintColor)),
+                            isExpanded: true,
+                            hint: Text(
+                              getTranslated('search_or_select_zip_code_area', context)!,
+                              style: rubikRegular.copyWith(fontSize: Dimensions.fontSizeDefault, color: Theme.of(context).hintColor),
+                            ),
+                            selectedItemBuilder: (BuildContext context) {
+                              return splashProvider.deliveryInfoModel!.deliveryChargeByArea!
+                                  .map((DeliveryChargeByArea item) {
+                                return Row(
+                                  children: [
+                                    Text(
+                                      item.areaName ?? "",
+                                      style: rubikRegular.copyWith(
+                                        fontSize: Dimensions.fontSizeDefault,
+                                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                                      ),
+                                    ),
+                                    Text(
+                                      " (${PriceConverterHelper.convertPrice(item.deliveryCharge?.toDouble() ?? 0)})",
+                                      style: rubikRegular.copyWith(
+                                        fontSize: Dimensions.fontSizeDefault,
+                                        color: Theme.of(context).hintColor,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList();
+                            },
+                            items: splashProvider.deliveryInfoModel!.deliveryChargeByArea!.map((DeliveryChargeByArea item) => DropdownMenuItem<String>(
+                                  value: item.id.toString(),
+                                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                                    Text(item.areaName ?? "",
+                                        style: rubikRegular.copyWith(
+                                          fontSize: Dimensions.fontSizeDefault,
+                                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                                        )),
+                                    Text(" (${PriceConverterHelper.convertPrice(item.deliveryCharge?.toDouble() ?? 0)})",
+                                        style: rubikRegular.copyWith(
+                                          fontSize: Dimensions.fontSizeDefault,
+                                          color: Theme.of(context).hintColor,
+                                        )),
+                                  ]),
+                                ))
+                                .toList(),
+                            value: locationProvider.selectedAreaID == -1
+                                ? null
+                                : splashProvider.deliveryInfoModel!.deliveryChargeByArea!.firstWhere((area) => area.id == locationProvider.selectedAreaID).id.toString(),
+                            onChanged: (String? value) {
+                              locationProvider.setAreaID(areaID: int.parse(value!));
+                              double deliveryCharge;
+                              deliveryCharge = CheckOutHelper.getDeliveryCharge(
+                                splashProvider: splashProvider,
+                                googleMapStatus: configModel!.googleMapStatus!,
+                                distance: checkoutProvider.distance,
+                                minimumDistanceForFreeDelivery: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.minimumDistanceForFreeDelivery?.toDouble() ?? 0,
+                                shippingPerKm: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.deliveryChargePerKilometer?.toDouble() ?? 0,
+                                minShippingCharge: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.minimumDeliveryCharge?.toDouble() ?? 0,
+                                defaultDeliveryCharge: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.fixedDeliveryCharge?.toDouble() ?? 0,
+                                isTakeAway: checkoutProvider.orderType == OrderType.takeAway,
+                                areaID: int.parse(value),
+                              );
+                              checkoutProvider.setDeliveryCharge(deliveryCharge: deliveryCharge);
+                            },
+                            dropdownSearchData: DropdownSearchData(
+                              searchController: searchController,
+                              searchInnerWidgetHeight: 50,
+                              searchInnerWidget: Container(
+                                height: 50,
+                                padding: const EdgeInsets.only(
+                                  top: Dimensions.paddingSizeSmall,
+                                  left: Dimensions.paddingSizeSmall,
+                                  right: Dimensions.paddingSizeSmall,
+                                ),
+                                child: TextFormField(
+                                  controller: searchController,
+                                  expands: true,
+                                  maxLines: null,
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+                                    hintText: getTranslated('search_zip_area_name', context)!,
+                                    hintStyle: const TextStyle(fontSize: Dimensions.fontSizeSmall),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  " (${PriceConverterHelper.convertPrice(item.deliveryCharge?.toDouble() ?? 0)})",
-                                  style: rubikRegular.copyWith(
-                                    fontSize: Dimensions.fontSizeDefault,
-                                    color: Theme.of(context).hintColor,
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList();
-                        },
-
-                        items: splashProvider.deliveryInfoModel!.deliveryChargeByArea!.map((DeliveryChargeByArea item) => DropdownMenuItem<String>(
-                          value: item.id.toString(),
-                          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-
-                            Text(item.areaName ?? "", style: rubikRegular.copyWith(
-                              fontSize: Dimensions.fontSizeDefault,
-                              color: Theme.of(context).textTheme.bodyMedium?.color,
-                            )),
-
-                            Text(" (${PriceConverterHelper.convertPrice(item.deliveryCharge?.toDouble() ?? 0)})",
-                              style: rubikRegular.copyWith(
-                                fontSize: Dimensions.fontSizeDefault,
-                                color: Theme.of(context).hintColor,
                               ),
+                              searchMatchFn: (item, searchValue) {
+                                final area = splashProvider.deliveryInfoModel!.deliveryChargeByArea!.firstWhere((area) => area.id.toString() == item.value);
+                                return (area.areaName?.toLowerCase().contains(searchValue.toLowerCase()) ?? false);
+                              },
                             ),
-
-                          ]),
-                        )).toList(),
-
-                        value: locationProvider.selectedAreaID == -1 ? null
-                            : splashProvider.deliveryInfoModel!.deliveryChargeByArea!.firstWhere((area) => area.id == locationProvider.selectedAreaID).id.toString(),
-
-                        onChanged: (String? value) {
-                          locationProvider.setAreaID(areaID: int.parse(value!));
-                          double deliveryCharge;
-                          deliveryCharge = CheckOutHelper.getDeliveryCharge(
-                            splashProvider : splashProvider,
-                            googleMapStatus: configModel!.googleMapStatus!,
-                            distance: checkoutProvider.distance,
-                            minimumDistanceForFreeDelivery: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.minimumDistanceForFreeDelivery?.toDouble() ?? 0,
-                            shippingPerKm: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.deliveryChargePerKilometer?.toDouble() ?? 0,
-                            minShippingCharge: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.minimumDeliveryCharge?.toDouble() ?? 0,
-                            defaultDeliveryCharge: splashProvider.deliveryInfoModel?.deliveryChargeSetup?.fixedDeliveryCharge?.toDouble() ?? 0,
-                            isTakeAway: checkoutProvider.orderType == OrderType.takeAway,
-                            areaID : int.parse(value),
-                          );
-                          checkoutProvider.setDeliveryCharge(deliveryCharge: deliveryCharge);
-                        },
-
-                        dropdownSearchData: DropdownSearchData(
-                          searchController: searchController,
-                          searchInnerWidgetHeight: 50,
-                          searchInnerWidget: Container(
-                            height: 50,
-                            padding: const EdgeInsets.only(
-                              top: Dimensions.paddingSizeSmall,
-                              left: Dimensions.paddingSizeSmall,
-                              right: Dimensions.paddingSizeSmall,
-                            ),
-                            child: TextFormField(
-                              controller: searchController,
-                              expands: true,
-                              maxLines: null,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                contentPadding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-                                hintText: getTranslated('search_zip_area_name', context)!,
-                                hintStyle: const TextStyle(fontSize: Dimensions.fontSizeSmall),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
-                                ),
-                              ),
-                            ),
+                            onMenuStateChange: (isOpen) {
+                              if (!isOpen) {
+                                searchController.clear();
+                              }
+                            },
                           ),
-                          searchMatchFn: (item, searchValue) {
-                            DeliveryChargeByArea areaItem = splashProvider.deliveryInfoModel!.deliveryChargeByArea!
-                                .firstWhere((element) => element.id.toString() == item.value);
-                            return areaItem.areaName?.toLowerCase().contains(searchValue.toLowerCase()) ?? false;
-                          },
                         ),
-                        buttonStyleData: ButtonStyleData(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Theme.of(context).hintColor),
-                            borderRadius: BorderRadius.circular(Dimensions.radiusDefault),),
-                          padding: const EdgeInsets.only(right: Dimensions.paddingSizeSmall),
-                        ),
-
-                      ))),
-
-
+                      ), // End Expanded
                     ]);
-                  }
+                  },
                 ),
-                const SizedBox(height: Dimensions.paddingSizeExtraLarge),
+                const SizedBox(height: Dimensions.paddingSizeLarge),
               ],
+
+              Text(getTranslated('delivery_option', context)!, style: rubikMedium.copyWith(fontSize: Dimensions.fontSizeLarge)),
+              DeliveryOptionWidget(
+                  value: OrderType.delivery, 
+                  title: getTranslated('home_delivery', context)!, 
+                  deliveryCharge: deliveryCharge ?? 0.0
+              ),
+              if(splashProvider.configModel?.selfPickup ?? false)
+                DeliveryOptionWidget(
+                    value: OrderType.takeAway, 
+                    title: getTranslated('take_away', context)!, 
+                    deliveryCharge: 0.0
+                ),
 
             ]),
           );
