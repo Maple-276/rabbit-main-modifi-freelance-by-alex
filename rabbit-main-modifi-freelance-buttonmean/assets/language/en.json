@@ -764,6 +764,7 @@
   "error_invalid_number": "Invalid number",
   "error_processing_request": "Error processing request",
   "success_otp_sent_to_phone": "Verification code sent to {phoneNumber}",
-  "error_sending_otp": "Error sending verification code"
-
+  "error_sending_otp": "Error sending verification code",
+   "show_details": "Show Details",
+  "hide_details": "Hide Details"
 }

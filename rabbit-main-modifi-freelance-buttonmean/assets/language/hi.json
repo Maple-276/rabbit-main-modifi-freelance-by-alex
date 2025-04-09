@@ -749,4 +749,18 @@
   "banner_healthy": "फिट रहने के लिए स्वस्थ विकल्प",
   "banner_fast_food": "तत्काल भूख के लिए फास्ट फूड",
   "banner_local_food": "हमारे पास मौजूद स्थानीय स्वादों की खोज करें"
-}
+,
+  "headline_favorites_one_click": "आपके पसंदीदा व्यंजन बस एक क्लिक दूर",
+  "subtitle_enter_number_enjoy": "अपना नंबर दर्ज करें और आनंद लेना शुरू करें",
+  "info_only_number_for_updates": "अपडेट के लिए हमें केवल आपके नंबर की आवश्यकता है",
+    "button_start_now": "अभी शुरू करें!",
+    "social_proof_join_users": "+10,000 संतुष्ट उपयोगकर्ताओं से जुड़ें"
+  ,
+    "legal_terms_privacy": "जारी रखकर, आप हमारी सेवा की शर्तों और गोपनीयता नीति से सहमत होते हैं",
+    "error_invalid_number": "अमान्य संख्या",
+    "error_processing_request": "अनुरोध संसाधित करने में त्रुटि",
+    "success_otp_sent_to_phone": "सत्यापन कोड {phoneNumber} पर भेजा गया",
+    "error_sending_otp": "सत्यापन कोड भेजने में त्रुटि"
+  } 
+
+

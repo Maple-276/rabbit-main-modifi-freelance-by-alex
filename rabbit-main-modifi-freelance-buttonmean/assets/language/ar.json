@@ -748,5 +748,16 @@
   "banner_desserts": "حلّي يومك مع حلوياتنا اللذيذة",
   "banner_healthy": "خيارات صحية للحفاظ على لياقتك",
   "banner_fast_food": "وجبات سريعة لتلبية رغباتك العاجلة",
-  "banner_local_food": "اكتشف النكهات المحلية التي نقدمها لك"
+  "banner_local_food": "اكتشف النكهات المحلية التي نقدمها لك",
+  "headline_favorites_one_click": "أطباقك المفضلة بنقرة واحدة",
+  "subtitle_enter_number_enjoy": "أدخل رقمك وابدأ بالاستمتاع",
+  "info_only_number_for_updates": "نحتاج فقط رقمك للتحديثات",
+  "button_start_now": "ابدأ الآن!",
+  "social_proof_join_users": "انضم إلى +10,000 مستخدم راضٍ",
+  "legal_terms_privacy": "بالاستمرار، فإنك توافق على شروط الخدمة وسياسة الخصوصية الخاصة بنا",
+  "error_invalid_number": "رقم غير صالح",
+  "error_processing_request": "خطأ في معالجة الطلب",
+  "success_otp_sent_to_phone": "تم إرسال رمز التحقق إلى {phoneNumber}",
+  "error_sending_otp": "خطأ في إرسال رمز التحقق"
+
 }

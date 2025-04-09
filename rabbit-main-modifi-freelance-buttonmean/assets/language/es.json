@@ -756,6 +756,7 @@
   "banner_fast_food": "Comida rápida para esos antojos urgentes",
   "banner_local_food": "Descubre los sabores locales que tenemos para ti",
   "show_details": "Mostrar Detalles",
+  "hide_details": "Ocultar Detalles",
   "invalid_credentials": "Correo o contraseña incorrectos",
   "initialization_error": "Error de inicialización",
   "retry": "Reintentar",
@@ -773,5 +774,6 @@
   "error_invalid_number": "Invalid number",
   "error_processing_request": "Error processing request",
   "success_otp_sent_to_phone": "Verification code sent to {phoneNumber}",
-  "error_sending_otp": "Error sending verification code"
+  "error_sending_otp": "Error sending verification code",
+
 }
