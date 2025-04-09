@@ -257,11 +257,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       padding:  const EdgeInsets.all(Dimensions.paddingSizeLarge),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
 
-                        CostSummeryWidget(
-                          kmWiseCharge: kmWiseCharge,
-                          deliveryCharge: checkoutProvider.orderType == OrderType.takeAway ? 0 : checkoutProvider.deliveryCharge,
-                          subtotal: widget.amount,
-                        ),
+                        CostSummeryWidget(),
                         const SizedBox(height: Dimensions.paddingSizeDefault),
 
                         ConfirmButtonWidget(
@@ -320,11 +316,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     titleStyle: rubikSemiBold.copyWith(fontSize: Dimensions.fontSizeExtraLarge, color: Theme.of(context).primaryColor),
                   ),
                   children: [
-                    SizedBox(height : 150, child: CostSummeryWidget(
-                      kmWiseCharge: kmWiseCharge,
-                      deliveryCharge: (takeAway ? 0 : checkoutProvider.deliveryCharge),
-                      subtotal: widget.amount,
-                    )),
+                    SizedBox(height : 150, child: CostSummeryWidget()),
                   ],
                 ),
 

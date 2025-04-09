@@ -174,21 +174,28 @@ class _CartScreenState extends State<CartScreen> {
                 availableList.add(DateConverterHelper.isAvailable(cartModel.product!.availableTimeStarts!, cartModel.product!.availableTimeEnds!));
 
                 for(int index=0; index<addOnList.length; index++) {
-                  addOns = addOns + (addOnList[index].price! * cartModel.addOnIds![index].quantity!);
-                  addOnsTax = addOnsTax + ((PriceConverterHelper.addonTaxCalculation(addOnList[index].tax, addOnsTax, addOnList[index].price, 'percent')) * (cartModel.addOnIds?[index].quantity ?? 1));
+                  double addonPrice = addOnList[index].price ?? 0;
+                  int addonQuantity = cartModel.addOnIds?[index].quantity ?? 0;
+                  addOns += (addonPrice * addonQuantity);
+                  addOnsTax += ((PriceConverterHelper.addonTaxCalculation(addOnList[index].tax, addOnsTax, addonPrice, 'percent')) * addonQuantity);
                 }
 
+                double price = cartModel.price ?? 0;
+                int quantity = cartModel.quantity ?? 0;
+                double itemDiscountAmount = cartModel.discountAmount ?? 0;
+                double itemTaxAmount = cartModel.taxAmount ?? 0;
 
-                itemPrice = itemPrice + (cartModel.price! * cartModel.quantity!);
-                discount = discount + (cartModel.discountAmount! * cartModel.quantity!);
-
-                tax = tax + (cartModel.taxAmount! * cartModel.quantity!) + addOnsTax;
+                itemPrice += (price * quantity);
+                discount += (itemDiscountAmount * quantity);
+                tax += (itemTaxAmount * quantity) + addOnsTax;
               }
 
-              double subTotal = itemPrice + tax  + addOns;
-              double total = subTotal - discount - Provider.of<CouponProvider>(context).discount!;
-              double totalWithoutDeliveryFee = subTotal - discount - Provider.of<CouponProvider>(context).discount!;
+              double subTotal = itemPrice + addOns + tax;
+              double couponDiscountValue = Provider.of<CouponProvider>(context, listen: false).discount ?? 0;
+              double totalDiscount = discount + couponDiscountValue;
+              double total = subTotal - totalDiscount;
 
+              double totalWithoutDeliveryFee = total;
               double orderAmount = itemPrice + addOns;
 
               bool kmWiseCharge = CheckOutHelper.isKmWiseCharge(deliveryInfoModel: splashProvider.deliveryInfoModel);
@@ -326,46 +333,18 @@ class _CartScreenState extends State<CartScreen> {
                                 ),
                                 const SizedBox(height: Dimensions.paddingSizeLarge),
 
-                                /// Total
-                                ItemViewWidget(
-                                  title: getTranslated('items_price', context)!,
-                                  subTitle: PriceConverterHelper.convertPrice(itemPrice),
+                                /// --- Replace previous summary section with the new StatefulWidget ---
+                                _CartSummarySection(
+                                  itemPrice: itemPrice,
+                                  addOns: addOns,
+                                  tax: tax,
+                                  totalDiscount: totalDiscount,
+                                  total: total,
+                                  kmWiseCharge: kmWiseCharge,
                                 ),
-                                const SizedBox(height: Dimensions.paddingSizeSmall),
+                                // --- End of replaced section ---
 
-                                ItemViewWidget(
-                                  title: getTranslated('tax', context)!,
-                                  subTitle: '(+) ${PriceConverterHelper.convertPrice(tax)}',
-                                ),
-                                const SizedBox(height: Dimensions.paddingSizeSmall),
-
-                                ItemViewWidget(
-                                  title: getTranslated('addons', context)!,
-                                  subTitle: '(+) ${PriceConverterHelper.convertPrice(addOns)}',
-                                ),
-                                const SizedBox(height: Dimensions.paddingSizeSmall),
-
-                                ItemViewWidget(
-                                  title: getTranslated('discount', context)!,
-                                  subTitle: '(-) ${PriceConverterHelper.convertPrice(discount)}',
-                                ),
-                                const SizedBox(height: Dimensions.paddingSizeSmall),
-
-                                ItemViewWidget(
-                                  title: getTranslated('coupon_discount', context)!,
-                                  subTitle: '(-) ${PriceConverterHelper.convertPrice(Provider.of<CouponProvider>(context).discount)}',
-                                ),
-                                const SizedBox(height: Dimensions.paddingSizeSmall),
-
-                                Divider(color: Theme.of(context).hintColor.withOpacity(0.5)),
-
-                                ItemViewWidget(
-                                  title: getTranslated(kmWiseCharge ? 'total' : 'total_amount', context)!,
-                                  subTitle: PriceConverterHelper.convertPrice(total),
-                                  subTitleStyle: rubikSemiBold,
-                                ),
                                 const SizedBox(height: Dimensions.paddingSizeLarge),
-
                                 const CutleryWidget(),
 
                                 if(ResponsiveHelper.isDesktop(context)) const SizedBox(height: Dimensions.paddingSizeDefault),
@@ -405,6 +384,110 @@ class _CartScreenState extends State<CartScreen> {
   }
 
 
+}
+
+// --- Define the new StatefulWidget for the Cart Summary Section ---
+class _CartSummarySection extends StatefulWidget {
+  final double itemPrice;
+  final double addOns;
+  final double tax;
+  final double totalDiscount;
+  final double total;
+  final bool kmWiseCharge; // Needed for the total label
+
+  const _CartSummarySection({
+    required this.itemPrice,
+    required this.addOns,
+    required this.tax,
+    required this.totalDiscount,
+    required this.total,
+    required this.kmWiseCharge,
+  });
+
+  @override
+  _CartSummarySectionState createState() => _CartSummarySectionState();
+}
+
+class _CartSummarySectionState extends State<_CartSummarySection> {
+  bool _showOptionalDetails = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Determine if there are any optional details to potentially show
+    // Optional details are addons and tax in this cart summary
+    bool hasOptionalDetailsToShow = widget.addOns >= 0 || widget.tax >= 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Display Item Price (Always visible)
+        ItemViewWidget(
+          title: getTranslated('items_price', context)!,
+          subTitle: PriceConverterHelper.convertPrice(widget.itemPrice),
+        ),
+        const SizedBox(height: Dimensions.paddingSizeSmall),
+
+        // Display Addons if details are toggled ON
+        if (_showOptionalDetails) ...[
+          ItemViewWidget(
+            title: getTranslated('addons', context)!,
+            subTitle: '(+) ${PriceConverterHelper.convertPrice(widget.addOns)}', // Shows 0 if addons cost is 0
+          ),
+          const SizedBox(height: Dimensions.paddingSizeSmall),
+        ],
+
+        // Display Tax if details are toggled ON
+        if (_showOptionalDetails) ...[
+          ItemViewWidget(
+            title: getTranslated('tax', context)!,
+            subTitle: '(+) ${PriceConverterHelper.convertPrice(widget.tax)}', // Shows 0 if tax is 0
+          ),
+          const SizedBox(height: Dimensions.paddingSizeSmall),
+        ],
+
+        // Display Total Discount only if it exists (value > 0)
+        if (widget.totalDiscount > 0) ...[
+          ItemViewWidget(
+            title: getTranslated('total_discount', context)!,
+            subTitle: '(-) ${PriceConverterHelper.convertPrice(widget.totalDiscount)}',
+          ),
+          const SizedBox(height: Dimensions.paddingSizeSmall),
+        ],
+
+        // Add the general details toggle button if there are potential optional details
+        if (hasOptionalDetailsToShow) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _showOptionalDetails = !_showOptionalDetails;
+                });
+              },
+              child: Text(
+                _showOptionalDetails
+                    ? getTranslated('hide_details', context)! 
+                    : getTranslated('show_details', context)!,
+                style: rubikMedium.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).primaryColor),
+              ),
+            ),
+          ),
+        ],
+
+        Divider(color: Theme.of(context).hintColor.withOpacity(0.5)),
+        const SizedBox(height: Dimensions.paddingSizeSmall),
+
+        // Display Final Total (Always visible)
+        ItemViewWidget(
+          title: getTranslated(widget.kmWiseCharge ? 'total' : 'total_amount', context)!,
+          subTitle: PriceConverterHelper.convertPrice(widget.total),
+          subTitleStyle: rubikSemiBold.copyWith(fontSize: Dimensions.fontSizeLarge, color: Theme.of(context).primaryColor),
+          titleStyle: rubikSemiBold.copyWith(fontSize: Dimensions.fontSizeLarge),
+        ),
+        // No extra padding here, handled by the parent Column in CartScreen
+      ],
+    );
+  }
 }
 
 

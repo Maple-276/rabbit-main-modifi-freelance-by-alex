@@ -1,0 +1,12 @@
+{
+  "cost_summery": "ملخص التكلفة",
+  "items_price": "سعر الأصناف",
+  "discount": "خصم",
+  "total_discount": "إجمالي الخصم",
+  "delivery_fee": "رسوم التوصيل",
+  "tax": "ضريبة",
+  "addons": "إضافات",
+  "total_amount": "المبلغ الإجمالي",
+  "show_details": "إظهار التفاصيل",
+  "hide_details": "إخفاء التفاصيل"
+} 

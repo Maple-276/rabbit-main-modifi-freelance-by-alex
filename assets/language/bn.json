@@ -1,0 +1,12 @@
+{
+  "cost_summery": "খরচ সারসংক্ষেপ",
+  "items_price": "আইটেমের দাম",
+  "discount": "ছাড়",
+  "total_discount": "মোট ছাড়",
+  "delivery_fee": "ডেলিভারি ফি",
+  "tax": "কর",
+  "addons": "অ্যাডঅন",
+  "total_amount": "মোট পরিমাণ",
+  "show_details": "বিস্তারিত দেখান",
+  "hide_details": "বিস্তারিত লুকান"
+}

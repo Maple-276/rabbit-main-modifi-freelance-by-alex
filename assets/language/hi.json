@@ -1,0 +1,12 @@
+{
+  "cost_summery": "लागत सारांश",
+  "items_price": "आइटम मूल्य",
+  "discount": "छूट",
+  "total_discount": "कुल छूट",
+  "delivery_fee": "वितरण शुल्क",
+  "tax": "कर",
+  "addons": "एड-ऑन",
+  "total_amount": "कुल राशि",
+  "show_details": "विवरण दिखाएं",
+  "hide_details": "विवरण छिपाएं"
+} 

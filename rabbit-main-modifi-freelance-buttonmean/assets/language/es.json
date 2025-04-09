@@ -754,5 +754,7 @@
   "banner_desserts": "Endulza tu día con nuestros deliciosos postres",
   "banner_healthy": "Opciones saludables para mantenerte en forma",
   "banner_fast_food": "Comida rápida para esos antojos urgentes",
-  "banner_local_food": "Descubre los sabores locales que tenemos para ti"
+  "banner_local_food": "Descubre los sabores locales que tenemos para ti",
+  "show_details": "Mostrar Detalles",
+  "hide_details": "Ocultar Detalles"
 }
