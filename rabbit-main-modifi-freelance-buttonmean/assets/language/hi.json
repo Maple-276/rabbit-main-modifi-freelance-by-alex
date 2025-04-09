@@ -761,6 +761,10 @@
     "error_processing_request": "अनुरोध संसाधित करने में त्रुटि",
     "success_otp_sent_to_phone": "सत्यापन कोड {phoneNumber} पर भेजा गया",
     "error_sending_otp": "सत्यापन कोड भेजने में त्रुटि"
+    ,
+  "show_details": "विवरण दिखाएं",
+  "hide_details": "विवरण छिपाएं"
+
   } 
 
 

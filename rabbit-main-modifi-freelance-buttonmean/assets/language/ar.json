@@ -758,6 +758,7 @@
   "error_invalid_number": "رقم غير صالح",
   "error_processing_request": "خطأ في معالجة الطلب",
   "success_otp_sent_to_phone": "تم إرسال رمز التحقق إلى {phoneNumber}",
-  "error_sending_otp": "خطأ في إرسال رمز التحقق"
-
+  "error_sending_otp": "خطأ في إرسال رمز التحقق",
+  "show_details": "إظهار التفاصيل",
+  "hide_details": "إخفاء التفاصيل"
 }
