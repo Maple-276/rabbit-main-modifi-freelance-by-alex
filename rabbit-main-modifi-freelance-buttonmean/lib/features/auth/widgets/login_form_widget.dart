@@ -3,6 +3,7 @@ import 'package:flutter_restaurant/features/auth/providers/auth_provider.dart';
 import 'package:flutter_restaurant/features/auth/services/auth_service.dart';
 import 'package:flutter_restaurant/features/auth/widgets/phone_input_widget.dart';
 import 'package:flutter_restaurant/helper/custom_snackbar_helper.dart';
+import 'package:flutter_restaurant/helper/router_helper.dart';
 import 'package:flutter_restaurant/utill/dimensions.dart';
 import 'package:flutter_restaurant/utill/images.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
@@ -202,6 +203,10 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
               
               // Cancel button (if applicable)
               if (Navigator.canPop(context)) _buildCancelButton(),
+              
+              // Guest login button
+              const SizedBox(height: 15),
+              _buildGuestLoginButton(),
             ],
           ),
         ),
@@ -315,6 +320,50 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
           style: rubikMedium.copyWith(
             color: Theme.of(context).primaryColor,
             fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  /// Builds the guest login button
+  Widget _buildGuestLoginButton() {
+    return Center(
+      child: ElevatedButton.icon(
+        onPressed: () {
+          // Verificar que la ruta sea válida antes de navegar
+          try {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop(); // Cierra el diálogo actual si existe
+            }
+            RouterHelper.getDashboardRoute(
+              'home',
+              action: RouteAction.pushNamedAndRemoveUntil,
+            );
+          } catch (e) {
+            debugPrint('Error de navegación: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(getTranslated('navigation_error', context) ?? 'Error de navegación'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        icon: const Icon(Icons.person_outline, size: 18),
+        label: Text(
+          getTranslated('enter_as_guest', context)!,
+          style: rubikMedium.copyWith(
+            fontSize: 14,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.8),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
       ),
