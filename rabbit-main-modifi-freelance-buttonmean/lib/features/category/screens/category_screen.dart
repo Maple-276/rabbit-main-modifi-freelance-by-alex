@@ -141,83 +141,14 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
                     ),
                   ),
                   actions: !isDesktop ? [
-                    // Search field in mobile app bar
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10.0, top: 8.0, bottom: 8.0),
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.7,
-                        child: Consumer<SearchProvider>(
-                          builder: (context, searchProvider, _) => CustomTextFieldWidget(
-                            hintText: _getCurrentHintText(context),
-                            controller: _searchController,
-                            focusNode: _searchFocusNode,
-                            radius: 50,
-                            isShowBorder: true,
-                            isShowPrefixIcon: true,
-                            prefixIconUrl: Images.search,
-                            prefixIconColor: Theme.of(context).primaryColor,
-                            inputDecoration: InputDecoration(
-                              fillColor: Theme.of(context).cardColor,
-                              filled: true,
-                              hintStyle: rubikRegular.copyWith(
-                                fontSize: Dimensions.fontSizeLarge,
-                                color: Theme.of(context).primaryColor,
-                                fontWeight: FontWeight.w500,
-                                fontStyle: FontStyle.italic,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(50),
-                                borderSide: BorderSide(
-                                  width: 1,
-                                  color: Theme.of(context).primaryColor.withOpacity(0.4),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(50),
-                                borderSide: BorderSide(
-                                  width: 1,
-                                  color: Theme.of(context).primaryColor.withOpacity(0.4),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(50),
-                                borderSide: BorderSide(
-                                  width: 1, 
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
-                              // Indicator of progress
-                              suffixIcon: Stack(
-                                alignment: Alignment.centerRight,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 12.0),
-                                    child: SizedBox(
-                                      width: 35,
-                                      height: 2,
-                                      child: LinearProgressIndicator(
-                                        value: _progressController.value,
-                                        backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Theme.of(context).primaryColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            onSubmit: (text) {
-                              if(_searchController.text.trim().isNotEmpty) {
-                                RouterHelper.getSearchResultRoute(_searchController.text);
-                                searchProvider.searchDone();
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    )
+                    // Replace search field with a simple search icon button
+                    IconButton(
+                      icon: Icon(Icons.search, color: Theme.of(context).textTheme.bodyLarge?.color),
+                      tooltip: getTranslated('search', context),
+                      onPressed: () {
+                        RouterHelper.getSearchRoute();
+                      },
+                    ),
                   ] : null,
                   flexibleSpace: Container(
                     color:Theme.of(context).canvasColor,
@@ -232,11 +163,44 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
                         left: 50,
                         right: 50,
                       ),
-                      background: Container(height: 50, width : isDesktop ? Dimensions.webScreenWidth : MediaQuery.of(context).size.width,
+                      background: Container(
+                        height: 50, 
+                        width: isDesktop ? Dimensions.webScreenWidth : MediaQuery.of(context).size.width,
                         margin: const EdgeInsets.only(bottom: 50),
-                        child: CustomImageWidget(
-                          placeholder: Images.categoryBanner, fit: BoxFit.cover,
-                          image: '${splashProvider.baseUrls?.categoryBannerImageUrl}/${widget.categoryBannerImage}',
+                        child: Consumer<SplashProvider>(
+                          builder: (context, splashProvider, _) {
+                            // Determine if the image is a local asset or a network URL
+                            bool isLocalAsset = widget.categoryBannerImage != null && 
+                                                widget.categoryBannerImage!.startsWith('assets/');
+                            
+                            if (isLocalAsset) {
+                              // Use Image.asset for local assets
+                              return Image.asset(
+                                widget.categoryBannerImage!, 
+                                fit: BoxFit.cover,
+                                height: 50, // Apply height/width if needed
+                                width: isDesktop ? Dimensions.webScreenWidth : MediaQuery.of(context).size.width,
+                                errorBuilder: (context, error, stackTrace) => Image.asset(
+                                  Images.categoryBanner, // Fallback placeholder
+                                  fit: BoxFit.cover,
+                                ),
+                              );
+                            } else {
+                              // Use CustomImageWidget for network images
+                              String? imageUrl;
+                              if (widget.categoryBannerImage != null && widget.categoryBannerImage!.isNotEmpty) {
+                                imageUrl = '${splashProvider.baseUrls?.categoryBannerImageUrl}/${widget.categoryBannerImage}';
+                              } else {
+                                imageUrl = null; // Use placeholder if no banner is defined
+                              }
+
+                              return CustomImageWidget(
+                                placeholder: Images.categoryBanner, 
+                                fit: BoxFit.cover,
+                                image: imageUrl ?? '', 
+                              );
+                            }
+                          }
                         ),
                       ),
                     ),

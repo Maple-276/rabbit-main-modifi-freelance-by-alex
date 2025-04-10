@@ -20,7 +20,7 @@ class ApiCheckerHelper {
       });
 
     }else {
-      // showCustomSnackBarHelper(firebaseResponse ? error.errors?.first.message?.replaceAll('_', ' ').toCapitalized() : error.errors!.first.message);
+      // showCustomSnackBarHelper(fire baseResponse ? error.errors?.first.message?.replaceAll('_', ' ').toCapitalized() : error.errors!.first.message);
     }
   }
 

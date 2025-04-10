@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_restaurant/common/widgets/cart_button_widget.dart';
 import 'package:flutter_restaurant/common/widgets/custom_asset_image_widget.dart';
-import 'package:flutter_restaurant/common/widgets/custom_pop_scope_widget.dart';
 import 'package:flutter_restaurant/common/widgets/third_party_chat_widget.dart';
 import 'package:flutter_restaurant/features/address/providers/location_provider.dart';
 import 'package:flutter_restaurant/features/branch/providers/branch_provider.dart';
@@ -22,6 +21,8 @@ import 'package:flutter_restaurant/utill/dimensions.dart';
 import 'package:flutter_restaurant/utill/images.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_restaurant/common/widgets/custom_alert_dialog_widget.dart';
 
 import '../../../common/models/config_model.dart';
 import '../../../helper/branch_helper.dart';
@@ -40,8 +41,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   late List<Widget> _screens;
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey = GlobalKey();
 
-
-
   @override
   void initState() {
     Provider.of<BranchProvider>(context,listen: false).getBranchValueList(context);
@@ -49,10 +48,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
     _pageIndex = widget.pageIndex;
 
-
     final splashProvider = Provider.of<SplashProvider>(context, listen: false);
     final LocationProvider locationProvider = Provider.of<LocationProvider>(context, listen: false);
-
 
     if(splashProvider.policyModel == null) {
       Provider.of<SplashProvider>(context, listen: false).getPolicyPage();
@@ -61,7 +58,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     locationProvider.checkPermission(()=> locationProvider.getCurrentLocation(context, false).then((currentAddress) {
       locationProvider.onChangeCurrentAddress(currentAddress);
     }), canBeIgnoreDialog: true);
-
 
     Provider.of<OrderProvider>(context, listen: false).changeStatus(true);
 
@@ -79,7 +75,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     ];
   }
 
-
   Future<void> _setNearestBranch() async {
     try {
       final branchProvider = Provider.of<BranchProvider>(context, listen: false);
@@ -89,9 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       List<BranchValue> branchValues = await branchProvider.getBranchValueList(context);
       branchProvider.updateBranchId(branchValues.first.branches!.id, );
 
-
       BranchHelper.setBranch(context,frmDashboard: true);
-
 
       // if (branchValues.isNotEmpty) {
       //   // Get the nearest branch (first in the sorted list)
@@ -108,18 +101,44 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     }
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.sizeOf(context);
 
-    return CustomPopScopeWidget(
-      isExit: _pageIndex == 0,
-      onPopInvoked: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) {
+          return;
+        }
+
         if (_pageIndex != 0) {
           _setPage(0);
+        } else {
+          // Show exit confirmation dialog and handle result AFTER it closes
+          ResponsiveHelper.showDialogOrBottomSheet(
+            context, 
+            CustomAlertDialogWidget(
+              title: getTranslated('close_the_app', context),
+              subTitle: getTranslated('do_you_want_to_close_and', context),
+              rightButtonText: getTranslated('exit', context),
+              leftButtonText: getTranslated('cancel', context),
+              image: Images.logOut,
+              onPressRight: () {
+                // Close the dialog FIRST, then exit the app
+                Navigator.of(context).pop(); // Close the dialog
+                SystemNavigator.pop(); // Exit the app
+              },
+              onPressLeft: () {
+                // Just close the dialog
+                 Navigator.of(context).pop(); 
+              },
+            ),
+            // Removed the await and boolean type argument
+          );
+
+          // The logic to check shouldExit and call SystemNavigator.pop 
+          // is now handled directly within onPressRight.
         }
       },
       child: Scaffold(
@@ -127,112 +146,106 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         floatingActionButton: !ResponsiveHelper.isDesktop(context) && _pageIndex == 0
             ? Container(margin: const EdgeInsets.only(bottom: 80), child: const ThirdPartyChatWidget()) : null,
 
-
-
-      body: Stack(
-        children: [
-          Padding(
-            padding: EdgeInsets.only(bottom: ResponsiveHelper.isDesktop(context) ? 0 : defaultTargetPlatform == TargetPlatform.iOS ? 80 : 65),
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _screens.length,
-              physics: const NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                return _screens[index];
-              },
+        body: Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(bottom: ResponsiveHelper.isDesktop(context) ? 0 : defaultTargetPlatform == TargetPlatform.iOS ? 80 : 65),
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _screens.length,
+                physics: const NeverScrollableScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return _screens[index];
+                },
+              ),
             ),
-          ),
 
-          ResponsiveHelper.isDesktop(context)  ? const SizedBox() : Align(
-            alignment: Alignment.bottomCenter,
-            child: Consumer<SplashProvider>(
-                builder: (ctx, splashController, _) {
+            ResponsiveHelper.isDesktop(context)  ? const SizedBox() : Align(
+              alignment: Alignment.bottomCenter,
+              child: Consumer<SplashProvider>(
+                  builder: (ctx, splashController, _) {
 
-                  return Container(
-                    width: size.width,
-                    height: defaultTargetPlatform == TargetPlatform.iOS ? 80 : 65,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(Dimensions.radiusLarge)),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)],
-                    ),
-                    child: Stack(children: [
+                    return Container(
+                      width: size.width,
+                      height: defaultTargetPlatform == TargetPlatform.iOS ? 80 : 65,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(Dimensions.radiusLarge)),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)],
+                      ),
+                      child: Stack(children: [
 
-                      Center(
-                        heightFactor: 0.2,
-                        child: CartButtonWidget(
-                          onTap: () {
-                            // Usar Future.microtask para evitar problemas con widgets desmontados
-                            Future.microtask(() => _setPage(2));
-                          },
-                          size: 70,
-                          icon: const CustomAssetImageWidget(
-                            Images.order,
-                            color: Colors.white,
-                            height: 35,
+                        Center(
+                          heightFactor: 0.2,
+                          child: CartButtonWidget(
+                            onTap: () {
+                              Future.microtask(() => _setPage(2));
+                            },
+                            size: 80,
+                            icon: const CustomAssetImageWidget(
+                              Images.order,
+                              color: Colors.white,
+                              height: 25,
+                            ),
+                            semanticLabel: getTranslated('cart', context),
                           ),
-                          semanticLabel: getTranslated('cart', context),
                         ),
-                      ),
 
-                      ResponsiveHelper.isDesktop(context) ? const SizedBox() : Center(
-                        child: SizedBox(
-                          width: size.width, height: 80,
-                          child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                            BottomNavItemWidget(
-                              title: getTranslated('home', context)!,
-                              imageIcon: Images.homeSvg,
-                              isSelected: _pageIndex == 0,
-                              onTap: () => _setPage(0),
-                            ),
+                        ResponsiveHelper.isDesktop(context) ? const SizedBox() : Center(
+                          child: SizedBox(
+                            width: size.width, height: 80,
+                            child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                              BottomNavItemWidget(
+                                title: getTranslated('home', context)!,
+                                imageIcon: Images.homeSvg,
+                                isSelected: _pageIndex == 0,
+                                onTap: () => _setPage(0),
+                              ),
 
-                            BottomNavItemWidget(
-                              title: getTranslated('favourite', context)!.toCapitalized(),
-                              imageIcon: Images.favoriteSvg,
-                              isSelected: _pageIndex == 1,
-                              onTap: () => _setPage(1),
-                            ),
+                              BottomNavItemWidget(
+                                title: getTranslated('favourite', context)!.toCapitalized(),
+                                imageIcon: Images.favoriteSvg,
+                                isSelected: _pageIndex == 1,
+                                onTap: () => _setPage(1),
+                              ),
 
-                            Container(width: size.width * 0.2),
+                              Container(width: size.width * 0.2),
 
-                            BottomNavItemWidget(
-                              title: getTranslated('order', context)!,
-                              imageIcon: Images.shopSvg,
-                              isSelected: _pageIndex == 3,
-                              onTap: () => _setPage(3),
-                            ),
+                              BottomNavItemWidget(
+                                title: getTranslated('order', context)!,
+                                imageIcon: Images.shopSvg,
+                                isSelected: _pageIndex == 3,
+                                onTap: () => _setPage(3),
+                              ),
 
-                            BottomNavItemWidget(
-                              title: getTranslated('menu', context)!,
-                              imageIcon: Images.menuSvg,
-                              isSelected: _pageIndex == 4,
-                              onTap: () => _setPage(4),
-                            ),
-                          ]),
+                              BottomNavItemWidget(
+                                title: getTranslated('menu', context)!,
+                                imageIcon: Images.menuSvg,
+                                isSelected: _pageIndex == 4,
+                                onTap: () => _setPage(4),
+                              ),
+                            ]),
+                          ),
                         ),
+                      ],
                       ),
-                    ],
-                    ),
-                  );
-                }
+                    );
+                  }
+              ),
             ),
-          ),
 
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
-
-
 
   void _setPage(int pageIndex) {
     _pageController?.jumpToPage(pageIndex);
     setState(() {
       _pageIndex = pageIndex;
     });
-
   }
-  
 }
 
 

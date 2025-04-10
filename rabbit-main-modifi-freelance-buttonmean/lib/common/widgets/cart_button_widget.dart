@@ -62,7 +62,7 @@ class CartButtonWidget extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          border: Border.all(color: brdColor, width: borderWidth),
+          border: Border.all(color: brdColor, width: 0),
           borderRadius: BorderRadius.circular(size / 2),
           boxShadow: [
             BoxShadow(
