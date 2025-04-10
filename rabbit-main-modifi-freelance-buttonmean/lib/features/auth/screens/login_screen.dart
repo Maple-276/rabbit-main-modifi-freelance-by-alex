@@ -293,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 20.0),
-                            child: Row(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 if (Navigator.canPop(context))
@@ -315,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       ),
                                     ),
                                   ),
-                                const SizedBox(width: 10), // Espacio entre los botones
+                                const SizedBox(height: 15), // Espacio vertical entre los botones
                                 ElevatedButton.icon(
                                   onPressed: () {
                                     // Verificar que la ruta sea válida antes de navegar
