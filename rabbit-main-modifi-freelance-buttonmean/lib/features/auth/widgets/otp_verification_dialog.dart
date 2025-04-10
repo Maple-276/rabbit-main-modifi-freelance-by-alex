@@ -7,6 +7,7 @@ import 'package:flutter_restaurant/helper/custom_snackbar_helper.dart';
 import 'package:flutter_restaurant/helper/router_helper.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_restaurant/localization/language_constrants.dart';
 
 /// A dialog widget for OTP verification
 class OtpVerificationDialog extends StatefulWidget {
@@ -28,18 +29,18 @@ class OtpVerificationDialog extends StatefulWidget {
 }
 
 class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
-  // Controladores
+  // Controllers
   final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   
-  // Estado
+  // State
   bool _isVerifying = false;
   bool _isResending = false;
   String _errorMessage = '';
   
-  // Temporizador para expiración
+  // Resend Timer
   Timer? _resendTimer;
-  int _remainingSeconds = 60; // 1 minuto para expiración
+  int _remainingSeconds = 60; // 1 minute expiration
   bool get _canResend => _remainingSeconds <= 0;
 
   @override
@@ -79,7 +80,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
 
   @override
   void dispose() {
-    // Limpieza de recursos
+    // Resource cleanup
     for (var controller in _controllers) {
       controller.dispose();
     }
@@ -90,10 +91,10 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
     super.dispose();
   }
   
-  // Combina todos los dígitos de código OTP
+  // Combines all OTP code digits
   String get _otpCode => _controllers.map((controller) => controller.text).join();
   
-  // Verifica si el código OTP está completo
+  // Checks if the OTP code is complete
   bool get _isOtpComplete => _otpCode.length == 6;
 
   @override
@@ -103,7 +104,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
         borderRadius: BorderRadius.circular(20),
       ),
       title: Text(
-        'Verificación', 
+        'Verification', 
         style: rubikMedium.copyWith(
           color: Theme.of(context).primaryColor,
           fontSize: 20,
@@ -114,7 +115,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Ingresa el código enviado a ${widget.phone}',
+            'Enter the code sent to ${widget.phone}',
             style: rubikRegular.copyWith(
               fontSize: 14,
               color: Theme.of(context).textTheme.bodyMedium?.color,
@@ -123,7 +124,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
           ),
           const SizedBox(height: 8),
           
-          // Temporizador
+          // Timer
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -137,8 +138,8 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
               const SizedBox(width: 4),
               Text(
                 _canResend
-                    ? 'Código expirado'
-                    : 'Expira en ${_formatTime(_remainingSeconds)}',
+                    ? 'Code expired'
+                    : 'Expires in ${_formatTime(_remainingSeconds)}',
                 style: rubikRegular.copyWith(
                   fontSize: 12,
                   color: _canResend 
@@ -186,7 +187,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
               ),
             ),
             
-          // Reenviar código
+          // Resend code
           Padding(
             padding: const EdgeInsets.only(top: 16),
             child: TextButton(
@@ -207,7 +208,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Enviando...',
+                        'Sending...',
                         style: rubikRegular.copyWith(
                           color: Theme.of(context).hintColor,
                         ),
@@ -216,8 +217,8 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
                   )
                 : Text(
                     _canResend
-                        ? 'Reenviar código'
-                        : 'Reenviar en ${_formatTime(_remainingSeconds)}',
+                        ? 'Resend code'
+                        : 'Resend in ${_formatTime(_remainingSeconds)}',
                     style: rubikMedium.copyWith(
                       color: _canResend
                           ? Theme.of(context).primaryColor
@@ -233,7 +234,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
         TextButton(
           onPressed: _isVerifying ? null : () => Navigator.pop(context),
           child: Text(
-            'Cancelar',
+            getTranslated('cancel', context) ?? 'Cancel',
             style: rubikRegular.copyWith(
               color: _isVerifying ? Colors.grey : Colors.grey.shade700,
             ),
@@ -260,13 +261,13 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : Text('Verificar', style: rubikMedium),
+            : Text('Verify', style: rubikMedium),
         ),
       ],
     );
   }
   
-  /// Construye los campos de entrada para el código OTP
+  /// Builds the input fields for the OTP code
   Widget _buildOtpInputFields() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -307,30 +308,30 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
     );
   }
   
-  /// Maneja la entrada de dígitos en el campo OTP
+  /// Handles digit input in the OTP field
   void _handleOtpDigitInput(int index, String value) {
-    // Auto-avanza al siguiente campo cuando se ingresa un dígito
+    // Auto-advance to the next field when a digit is entered
     if (value.isNotEmpty && index < 5) {
       _focusNodes[index + 1].requestFocus();
     }
     
-    // Auto-retrocede cuando se borra un dígito
+    // Auto-backspace when a digit is deleted
     if (value.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();
     }
     
-    // Actualiza el estado de error y verifica automáticamente si el código está completo
+    // Update error state and automatically verify if the code is complete
     setState(() {
       _errorMessage = '';
     });
     
     if (_isOtpComplete && !_isVerifying) {
-      // Pequeño retraso para dar feedback visual
+      // Short delay for visual feedback
       Future.delayed(const Duration(milliseconds: 100), _verifyOTP);
     }
   }
   
-  /// Reenvía el código OTP
+  /// Resends the OTP code
   Future<void> _resendCode() async {
     if (_isResending || !_canResend) return;
     
@@ -345,10 +346,10 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
       if (!mounted) return;
       
       if (result.success) {
-        // Reiniciar el temporizador
+        // Reset timer
         _startResendTimer();
         
-        // Limpiar los campos OTP
+        // Clear OTP fields
         for (var controller in _controllers) {
           controller.clear();
         }
@@ -356,18 +357,18 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Nuevo código enviado a ${widget.phone}'),
+            content: Text('New code sent to ${widget.phone}'),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         setState(() {
-          _errorMessage = result.message ?? 'Error al reenviar el código';
+          _errorMessage = result.message ?? 'Error resending code';
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error al reenviar el código: $e';
+        _errorMessage = 'Error resending code: $e';
       });
     } finally {
       if (mounted) {
@@ -382,13 +383,12 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
   Future<void> _verifyOTP() async {
     if (_isVerifying) return;
     
-    // Obtiene el código completo
+    // Get the complete code
     final completeOtp = _otpCode;
     
-    // Validate OTP length
     if (completeOtp.length < 6) {
       setState(() {
-        _errorMessage = 'Ingresa el código completo de 6 dígitos';
+        _errorMessage = 'Enter the complete 6-digit code';
       });
       return;
     }
@@ -415,7 +415,7 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
         
         // Show success message
         showCustomSnackBarHelper(
-          'Verificación exitosa', 
+          'Verification successful', 
           isError: false
         );
         
@@ -433,9 +433,9 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
         // Show error message
         setState(() {
           _isVerifying = false;
-          _errorMessage = result.message ?? 'Error al verificar el código';
+          _errorMessage = result.message ?? 'Error verifying code';
           
-          // Limpiar los campos OTP en caso de error
+          // Clear OTP fields on error
           for (var controller in _controllers) {
             controller.clear();
           }
@@ -447,9 +447,9 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
       
       setState(() {
         _isVerifying = false;
-        _errorMessage = 'Error al procesar verificación: $e';
+        _errorMessage = 'Error processing verification: $e';
         
-        // Limpiar los campos OTP en caso de error
+        // Clear OTP fields on error
         for (var controller in _controllers) {
           controller.clear();
         }

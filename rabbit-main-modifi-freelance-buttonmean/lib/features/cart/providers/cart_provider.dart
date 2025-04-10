@@ -40,13 +40,13 @@ class CartProvider extends ChangeNotifier {
     cartRepo!.addToCartList(_cartList);
     setCartUpdate(false);
     
-    // Mensaje simplificado
-    String productName = cartModel.product!.name ?? 'Producto';
+    // Simplified message
+    String productName = cartModel.product!.name ?? 'Product';
     
     showCustomSnackBarHelper(
       index == -1 
-        ? '✓ $productName añadido al carrito' 
-        : '✓ $productName actualizado', 
+        ? '✓ $productName added to cart' 
+        : '✓ $productName updated', 
       isToast: true, 
       isError: false,
       type: SnackBarType.cart,
@@ -63,7 +63,7 @@ class CartProvider extends ChangeNotifier {
       int? productIndex,
       required bool fromProductView}) {
     int? index = fromProductView ? productIndex :  _cartList.indexOf(cart);
-    String productName = _cartList[index!]!.product!.name ?? 'Producto';
+    String productName = _cartList[index!]!.product!.name ?? 'Product';
     
     // Incrementar o decrementar cantidad
     if (isIncrement) {
@@ -76,11 +76,11 @@ class CartProvider extends ChangeNotifier {
     
     int quantity = _cartList[index]!.quantity ?? 0;
     
-    // Mensaje simplificado
+    // Simplified message
     showCustomSnackBarHelper(
       isIncrement
-        ? '✓ Cantidad: $quantity'
-        : '✓ Cantidad: $quantity', 
+        ? '✓ Quantity: $quantity'
+        : '✓ Quantity: $quantity', 
       isError: false,
       type: SnackBarType.cart,
       duration: _cartNotificationDuration,
@@ -92,15 +92,15 @@ class CartProvider extends ChangeNotifier {
   }
 
   void removeFromCart(int index) {
-    String productName = _cartList[index]!.product!.name ?? 'Producto';
+    String productName = _cartList[index]!.product!.name ?? 'Product';
     
     _amount = _amount - (_cartList[index]!.discountedPrice! * _cartList[index]!.quantity!);
     _cartList.removeAt(index);
     cartRepo!.addToCartList(_cartList);
     
-    // Mensaje simplificado
+    // Simplified message
     showCustomSnackBarHelper(
-      '✗ $productName eliminado', 
+      '✗ $productName removed', 
       isError: false, 
       type: SnackBarType.cart,
       duration: _cartNotificationDuration,
@@ -115,9 +115,9 @@ class CartProvider extends ChangeNotifier {
     _cartList[index]!.addOnIds!.removeAt(addOnIndex);
     cartRepo!.addToCartList(_cartList);
     
-    // Mensaje simplificado
+    // Simplified message
     showCustomSnackBarHelper(
-      '✗ Complemento eliminado', 
+      '✗ Add-on removed', 
       isError: false, 
       type: SnackBarType.cart,
       duration: _cartNotificationDuration,
@@ -132,9 +132,9 @@ class CartProvider extends ChangeNotifier {
     _amount = 0;
     cartRepo!.addToCartList(_cartList);
     
-    // Mensaje simplificado
+    // Simplified message
     showCustomSnackBarHelper(
-      '✓ Carrito vaciado', 
+      '✓ Cart emptied', 
       isError: false, 
       type: SnackBarType.cart,
       duration: _cartNotificationDuration,

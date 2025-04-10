@@ -73,7 +73,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center, 
             children: [
-              // Logo del conejo
+              // Rabbit logo
               Container(
                 height: 120,
                 width: 120,
@@ -84,7 +84,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 ),
               ),
               
-              // Mensaje principal persuasivo
+              // Persuasive main message
               Text(
                 getTranslated('headline_favorites_one_click', context)!,
                 style: rubikBold.copyWith(
@@ -97,7 +97,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
               
               const SizedBox(height: 8),
               
-              // Subtítulo persuasivo
+              // Persuasive subtitle
               Text(
                 getTranslated('subtitle_enter_number_enjoy', context)!,
                 style: rubikRegular.copyWith(
@@ -108,7 +108,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 textAlign: TextAlign.center,
               ),
               
-              // Texto contextual de confianza
+              // Contextual trust text
               Padding(
                 padding: const EdgeInsets.only(top: 5),
                 child: Row(
@@ -160,7 +160,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
               
               const SizedBox(height: 20),
               
-              // Elemento de prueba social
+              // Social proof element
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(

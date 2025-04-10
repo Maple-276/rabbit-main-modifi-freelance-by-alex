@@ -9,7 +9,7 @@ import 'dart:math' as math;
 class AuthService {
   final AuthProvider _authProvider;
   
-  // Almacenamiento local para el modo de desarrollo/demo
+  // Local storage for development/demo mode
   final Map<String, String> _otpStorage = {};
 
   AuthService(this._authProvider);
@@ -19,68 +19,68 @@ class AuthService {
   /// Returns a response with success status and token information
   Future<AuthResponseModel> sendVerificationCode(String phone) async {
     try {
-      // Si estuviéramos en producción, descomenta la siguiente línea:
+      // If we were in production, uncomment the following line:
       // return await _sendOTPViaAPI(phone);
       
-      // Para desarrollo/demostración, usamos un OTP generado localmente
+      // For development/demonstration, we use a locally generated OTP
       return await _sendMockOTP(phone);
     } catch (e) {
       debugPrint('OTP sending error: $e');
       return AuthResponseModel(
         success: false,
-        message: 'Error al enviar código: $e',
+        message: 'Error sending code: $e',
       );
     }
   }
   
-  /// Método que llama a la API real para enviar OTP (para producción)
+  /// Method that calls the real API to send OTP (for production)
   Future<AuthResponseModel> _sendOTPViaAPI(String phone) async {
     try {
-      // Aquí implementaríamos la llamada real a la API
-      // Por ejemplo:
+      // Here we would implement the actual API call
+      // Example:
       // final apiResponse = await _authProvider.sendOTPForVerification(phone);
       // return AuthResponseModel.fromJson(apiResponse.data);
       
-      // Como placeholder, devolvemos un error
-      throw UnimplementedError('API de OTP no implementada');
+      // As a placeholder, we return an error
+      throw UnimplementedError('OTP API not implemented');
     } catch (e) {
       rethrow;
     }
   }
   
-  /// Método que simula envío de OTP para desarrollo/demostración
+  /// Method that simulates sending OTP for development/demonstration
   Future<AuthResponseModel> _sendMockOTP(String phone) async {
     await Future.delayed(const Duration(seconds: 1));
     
     try {
-      // Genera un código OTP aleatorio de 6 dígitos
+      // Generate a random 6-digit OTP code
       final String otp = _generateOTP();
       
-      // En una app real, esto se enviaría por SMS
-      // Aquí lo guardamos en memoria para verificación
+      // In a real app, this would be sent via SMS
+      // Here we save it in memory for verification
       _otpStorage[phone] = otp;
       
-      // Para demo/desarrollo, mostramos el OTP en la consola
-      debugPrint('💬 OTP para $phone: $otp');
+      // For demo/development, we show the OTP in the console
+      debugPrint('💬 OTP for $phone: $otp');
       
-      // Simulamos un token temporal
+      // Simulate a temporary token
       final tempToken = 'temp_${DateTime.now().millisecondsSinceEpoch}';
       
       return AuthResponseModel(
         success: true,
-        message: 'Código enviado con éxito a $phone',
+        message: 'Code sent successfully to $phone',
         tempToken: tempToken,
       );
     } catch (e) {
-      debugPrint('Error generando OTP: $e');
+      debugPrint('Error generating OTP: $e');
       return AuthResponseModel(
         success: false,
-        message: 'Error al generar código de verificación',
+        message: 'Error generating verification code',
       );
     }
   }
   
-  /// Genera un código OTP aleatorio de 6 dígitos
+  /// Generates a random 6-digit OTP code
   String _generateOTP() {
     final math.Random random = math.Random();
     return List.generate(6, (_) => random.nextInt(10)).join();
@@ -95,85 +95,85 @@ class AuthService {
     required String tempToken,
   }) async {
     try {
-      // Si estuviéramos en producción, descomenta la siguiente línea:
+      // If we were in production, uncomment the following line:
       // return await _verifyOTPViaAPI(phone, otp, tempToken);
       
-      // Para desarrollo/demostración, verificamos contra almacenamiento local
+      // For development/demonstration, we verify against local storage
       return await _verifyMockOTP(phone, otp, tempToken);
     } catch (e) {
       debugPrint('OTP verification error: $e');
       return AuthResponseModel(
         success: false,
-        message: 'Error al verificar el código: $e',
+        message: 'Error verifying code: $e',
       );
     }
   }
   
-  /// Método que llama a la API real para verificar OTP (para producción)
+  /// Method that calls the real API to verify OTP (for production)
   Future<AuthResponseModel> _verifyOTPViaAPI(String phone, String otp, String tempToken) async {
     try {
-      // Aquí implementaríamos la llamada real a la API
-      // Por ejemplo:
+      // Here we would implement the actual API call
+      // Example:
       // final apiResponse = await _authProvider.verifyOTP(phone, otp, tempToken);
       // return AuthResponseModel.fromJson(apiResponse.data);
       
-      // Como placeholder, devolvemos un error
-      throw UnimplementedError('API de verificación OTP no implementada');
+      // As a placeholder, we return an error
+      throw UnimplementedError('OTP verification API not implemented');
     } catch (e) {
       rethrow;
     }
   }
   
-  /// Método que simula verificación de OTP para desarrollo/demostración
+  /// Method that simulates OTP verification for development/demonstration
   Future<AuthResponseModel> _verifyMockOTP(String phone, String otp, String tempToken) async {
     await Future.delayed(const Duration(milliseconds: 1500));
     
     try {
-      // Obtiene el OTP almacenado para el teléfono
+      // Get the stored OTP for the phone
       final storedOTP = _otpStorage[phone];
       
-      // Si no hay OTP almacenado o ha expirado
+      // If there is no stored OTP or it has expired
       if (storedOTP == null) {
         return AuthResponseModel(
           success: false,
-          message: 'El código ha expirado. Solicita uno nuevo.',
+          message: 'The code has expired. Please request a new one.',
         );
       }
       
-      // Compara el OTP ingresado con el almacenado
+      // Compare the entered OTP with the stored one
       if (otp == storedOTP) {
-        // Limpia el OTP usado
+        // Clear the used OTP
         _otpStorage.remove(phone);
         
-        // En una app real, aquí obtendríamos un token de autenticación
-        // Simulamos un token de autenticación
+        // In a real app, here we would get an authentication token
+        // Simulate an authentication token
         final token = 'auth_${DateTime.now().millisecondsSinceEpoch}';
         
         return AuthResponseModel(
           success: true,
-          message: 'Verificación exitosa',
+          message: 'Verification successful',
           token: token,
-          userId: 12345, // ID simulado
+          userId: 12345, // Simulated ID
         );
       } else if (otp == '123456') {
-        // Código de bypass para testing
+        // Bypass code for testing
         return AuthResponseModel(
           success: true,
-          message: 'Verificación exitosa (código maestro)',
+          message: 'Verification successful (master code)',
           token: 'auth_master_token',
           userId: 12345,
         );
       } else {
         return AuthResponseModel(
           success: false,
-          message: 'Código de verificación incorrecto',
+          message: 'Incorrect verification code',
         );
       }
     } catch (e) {
-      debugPrint('Error verificando OTP: $e');
+      debugPrint('Error verifying OTP: $e');
       return AuthResponseModel(
         success: false,
-        message: 'Error al verificar código',
+        message: 'Error verifying code',
       );
     }
   }
@@ -184,21 +184,21 @@ class AuthService {
   (bool isValid, String? errorMessage) validatePhoneNumber(String phone) {
     try {
       if (phone.isEmpty) {
-        return (false, 'Por favor ingresa tu número de teléfono');
+        return (false, 'Please enter your phone number');
       }
       
       if (phone.length < 7) {
-        return (false, 'El número de teléfono es demasiado corto');
+        return (false, 'The phone number is too short');
       }
       
       if (!NumberCheckerHelper.isNumber(phone)) {
-        return (false, 'Por favor ingresa un número válido (solo dígitos)');
+        return (false, 'Please enter a valid number (digits only)');
       }
       
       return (true, null);
     } catch (e) {
       debugPrint('Phone validation error: $e');
-      return (false, 'Error al validar el número de teléfono');
+      return (false, 'Error validating phone number');
     }
   }
 
@@ -215,5 +215,78 @@ class AuthService {
     }
     
     return '+1' + phoneNumber; // Default country code
+  }
+
+  /// ```
+  Future<String?> signInWithEmailAndPassword(String email, String password) async {
+    // Simulate API call for email/password login
+    await Future.delayed(const Duration(seconds: 1)); 
+
+    // Example:
+    if (email == 'test@example.com' && password == 'password') {
+      // Simulate successful login, return a token
+      return 'fake-email-auth-token';
+    } else {
+      // Simulate login failure
+      throw Exception('Invalid credentials');
+    }
+  }
+
+  /// Signs in using Google credentials.
+  /// Returns a token on success, throws exception on failure.
+  Future<String?> signInWithGoogle() async {
+    // Simulate Google Sign-In flow
+    await Future.delayed(const Duration(seconds: 1));
+    // Simulate successful Google login
+    return 'fake-google-auth-token'; 
+  }
+
+  /// Registers a new user with email and password.
+  /// Returns a temporary token if verification is needed, or null on failure.
+  Future<String?> registerWithEmailAndPassword(String email, String password) async {
+    // Simulate API call for registration
+    await Future.delayed(const Duration(seconds: 1)); 
+
+    // Assume registration requires email verification
+    // Simulate a temporary token
+    return 'fake-temp-verification-token'; 
+  }
+
+  /// Verifies an OTP or verification code.
+  /// Returns a final auth token on success, throws exception on failure.
+  Future<String?> verifyCode(String code, {String? tempToken}) async {
+    // Simulate API call to verify the code
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (code == '123456' && tempToken != null) {
+      // Simulate successful verification, return final token
+      return 'final-auth-token-after-verification';
+    } else {
+      // Simulate verification failure
+      throw Exception('Invalid verification code');
+    }
+  }
+
+  /// Sends a password reset request.
+  Future<void> sendPasswordResetEmail(String email) async {
+    // Simulate API call to send reset email
+    await Future.delayed(const Duration(seconds: 1));
+    // Assume success
+  }
+
+  /// Logs the user out.
+  Future<void> signOut() async {
+    // Simulate clearing local session data
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Assume success
+  }
+
+  /// Checks if a phone number exists.
+  /// Returns true if exists, false otherwise.
+  Future<bool> checkPhoneExists(String phoneNumber) async {
+     // Simulate API call
+     await Future.delayed(const Duration(milliseconds: 800));
+     // Example:
+     return phoneNumber == '+11234567890'; // Assume this number exists
   }
 } 

@@ -506,7 +506,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               )
                             )
                           ),
-                          // Indicador de progreso
+                          // Progress indicator
                           Padding(
                             padding: const EdgeInsets.only(right: 15.0),
                             child: SizedBox(
@@ -656,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildSubCategoryGrid(BuildContext context) {
-    // ACCESO DIRECTO A VARIABLES PRIVADAS (NO RECOMENDADO - SOLO PARA DEBUG/WORKAROUND)
+    // DIRECT ACCESS TO PRIVATE VARIABLES (NOT RECOMMENDED - ONLY FOR DEBUG/WORKAROUND)
     return Consumer<CategoryProvider>(
       builder: (context, categoryProvider, child) {
         // --- Filter subcategories directly here --- 
