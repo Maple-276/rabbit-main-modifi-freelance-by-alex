@@ -29,6 +29,9 @@ class _CategoryPageWidgetState extends State<CategoryPageWidget> {
   @override
   Widget build(BuildContext context) {
 
+    // Add print to check the category list content
+    print('CategoryPageWidget build: categoryList = ${widget.categoryProvider.categoryList?.map((c) => c.toJson()).toList()}');
+
     final isDesktop = ResponsiveHelper.isDesktop(context);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final length = isDesktop ? 10 : 8;
@@ -75,12 +78,36 @@ class _CategoryPageWidgetState extends State<CategoryPageWidget> {
             ),
             padding: EdgeInsets.zero,
             itemBuilder: (context, i) {
-              int currentIndex0 = i  + currentIndex;
-              String? name = widget.categoryProvider.categoryList![currentIndex0].name;
+              int currentIndex0 = i + currentIndex;
+              final category = widget.categoryProvider.categoryList![currentIndex0];
+              String? name = category.name;
+              String? imagePath = category.image;
+
+              // --- TEMPORARY SIMPLIFIED UI (Removed) --- 
+              /*
+              return Container(
+                margin: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.all(8.0),
+                color: Colors.amberAccent, 
+                child: Center(
+                  child: Text(
+                    name ?? 'NO NAME', 
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              );
+              */
+              // --- END TEMPORARY UI ---
+
+              // --- Restore Original Complex UI --- 
+              bool isLocalAsset = imagePath != null && imagePath.startsWith('assets/');
+              // Need SplashProvider here
+              final SplashProvider splashProvider = Provider.of<SplashProvider>(context, listen: false);
 
               return Column(mainAxisSize: MainAxisSize.min, children: [
                 InkWell(
-                  onTap: () => RouterHelper.getCategoryRoute(widget.categoryProvider.categoryList![currentIndex0]),
+                  onTap: () => RouterHelper.getCategoryRoute(category),
                   borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
                   child: isDesktop ? OnHoverWidget(builder: (isHoverActive) {
                     return Container(
@@ -94,11 +121,17 @@ class _CategoryPageWidgetState extends State<CategoryPageWidget> {
                           spreadRadius: Dimensions.radiusSmall, blurRadius: Dimensions.radiusLarge,
                         )],
                       ),
-                      child: CustomImageWidget(
-                        height: 45, width: 45,
-                        image: splashProvider.baseUrls != null
-                            ? '${splashProvider.baseUrls!.categoryImageUrl}/${widget.categoryProvider.categoryList![currentIndex0].image}' : '',
-                      ),
+                      child: isLocalAsset
+                          ? Image.asset(
+                              imagePath!, 
+                              height: 45, width: 45, fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 45),
+                            )
+                          : CustomImageWidget(
+                              height: 45, width: 45,
+                              image: splashProvider.baseUrls != null && imagePath != null
+                                  ? '${splashProvider.baseUrls!.categoryImageUrl}/$imagePath' : '',
+                            ),
                     );
                   }) : Container(
                     padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
@@ -110,16 +143,22 @@ class _CategoryPageWidgetState extends State<CategoryPageWidget> {
                         spreadRadius: Dimensions.radiusSmall, blurRadius: Dimensions.radiusLarge,
                       )],
                     ),
-                    child: CustomImageWidget(
-                      height: 45, width: 45,
-                      image: splashProvider.baseUrls != null
-                          ? '${splashProvider.baseUrls!.categoryImageUrl}/${widget.categoryProvider.categoryList![currentIndex0].image}' : '',
-                    ),
+                    child: isLocalAsset
+                        ? Image.asset(
+                            imagePath!, 
+                            height: 45, width: 45, fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 45),
+                          )
+                        : CustomImageWidget(
+                            height: 45, width: 45,
+                            image: splashProvider.baseUrls != null && imagePath != null
+                                ? '${splashProvider.baseUrls!.categoryImageUrl}/$imagePath' : '',
+                          ),
                   ),
                 ),
                 const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
-                Text(name!, maxLines: 1, textAlign: TextAlign.center,  style: rubikSemiBold.copyWith(
+                Text(name ?? '', maxLines: 1, textAlign: TextAlign.center,  style: rubikSemiBold.copyWith(
                   fontSize: isDesktop ? Dimensions.fontSizeDefault : Dimensions.fontSizeSmall,
                 )),
               ]);

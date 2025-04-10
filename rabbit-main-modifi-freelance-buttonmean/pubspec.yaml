@@ -99,6 +99,7 @@ flutter:
     - assets/language/
     - assets/json/
     - assets/payment/
+    - assets/data/
     - assets/
     - web/assets/
 

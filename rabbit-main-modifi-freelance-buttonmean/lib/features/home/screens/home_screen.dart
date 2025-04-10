@@ -20,6 +20,7 @@ import 'package:flutter_restaurant/features/branch/providers/branch_provider.dar
 import 'package:flutter_restaurant/features/cart/providers/cart_provider.dart';
 import 'package:flutter_restaurant/features/cart/providers/frequently_bought_provider.dart';
 import 'package:flutter_restaurant/features/category/providers/category_provider.dart';
+import 'package:flutter_restaurant/features/category/domain/category_model.dart';
 import 'package:flutter_restaurant/features/home/providers/banner_provider.dart';
 import 'package:flutter_restaurant/features/home/widgets/banner_widget.dart';
 import 'package:flutter_restaurant/features/home/widgets/category_web_widget.dart';
@@ -58,54 +59,76 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 
   static Future<void> loadData(bool reload, {bool isFcmUpdate = false}) async {
-    final ProductProvider productProvider = Provider.of<ProductProvider>(Get.context!, listen: false);
-    final CategoryProvider categoryProvider = Provider.of<CategoryProvider>(Get.context!, listen: false);
-    final SplashProvider splashProvider = Provider.of<SplashProvider>(Get.context!, listen: false);
-    final BannerProvider bannerProvider = Provider.of<BannerProvider>(Get.context!, listen: false);
-    final ProfileProvider profileProvider = Provider.of<ProfileProvider>(Get.context!, listen: false);
-    final WishListProvider wishListProvider = Provider.of<WishListProvider>(Get.context!, listen: false);
-    final SearchProvider searchProvider = Provider.of<SearchProvider>(Get.context!, listen: false);
-    final FrequentlyBoughtProvider frequentlyBoughtProvider = Provider.of<FrequentlyBoughtProvider>(Get.context!, listen: false);
+    print('---- HomeScreen.loadData called with reload: $reload ----');
+    try {
+      final ProductProvider productProvider = Provider.of<ProductProvider>(Get.context!, listen: false);
+      final CategoryProvider categoryProvider = Provider.of<CategoryProvider>(Get.context!, listen: false);
+      final SplashProvider splashProvider = Provider.of<SplashProvider>(Get.context!, listen: false);
+      final BannerProvider bannerProvider = Provider.of<BannerProvider>(Get.context!, listen: false);
+      final ProfileProvider profileProvider = Provider.of<ProfileProvider>(Get.context!, listen: false);
+      final WishListProvider wishListProvider = Provider.of<WishListProvider>(Get.context!, listen: false);
+      final SearchProvider searchProvider = Provider.of<SearchProvider>(Get.context!, listen: false);
+      final FrequentlyBoughtProvider frequentlyBoughtProvider = Provider.of<FrequentlyBoughtProvider>(Get.context!, listen: false);
 
-    final isLogin = Provider.of<AuthProvider>(Get.context!, listen: false).isLoggedIn();
+      final isLogin = Provider.of<AuthProvider>(Get.context!, listen: false).isLoggedIn();
 
-    if(isLogin){
-      profileProvider.getUserInfo(reload, isUpdate: reload);
-      if(isFcmUpdate){
-        Provider.of<AuthProvider>(Get.context!, listen: false).updateToken();
+      if(isLogin){
+        print('[loadData] Getting user info...');
+        profileProvider.getUserInfo(reload, isUpdate: reload);
+        if(isFcmUpdate){
+          print('[loadData] Updating FCM token...');
+          Provider.of<AuthProvider>(Get.context!, listen: false).updateToken();
+        }
+      }else{
+        profileProvider.setUserInfoModel = null;
       }
-    }else{
-      profileProvider.setUserInfoModel = null;
+      print('[loadData] Initializing wishlist...');
+      wishListProvider.initWishList();
+
+      if(productProvider.latestProductModel == null || reload) {
+        print('[loadData] Getting latest products...');
+        productProvider.getLatestProductList(1, reload);
+      }
+
+      if(reload || productProvider.popularLocalProductModel == null){
+        print('[loadData] Getting popular local products...');
+        productProvider.getPopularLocalProductList(1,  true, isUpdate: false);
+      }
+
+      if(reload) {
+        print('[loadData] Getting policy page...');
+        splashProvider.getPolicyPage();
+      }
+      print('[loadData] Getting category list...');
+      categoryProvider.getCategoryList(reload);
+
+      if(productProvider.flavorfulMenuProductMenuModel == null || reload) {
+        print('[loadData] Getting flavorful menu...');
+        productProvider.getFlavorfulMenuProductMenuList(1, reload);
+      }
+
+      if(productProvider.recommendedProductModel == null || reload) {
+        print('[loadData] Getting recommended products...');
+        productProvider.getRecommendedProductList(1, reload);
+      }
+
+      print('[loadData] Getting banner list...');
+      bannerProvider.getBannerList(reload);
+      print('[loadData] Getting cuisine list...');
+      searchProvider.getCuisineList(isReload: reload);
+      print('[loadData] Getting search recommendations...');
+      searchProvider.getSearchRecommendedData(isReload: reload);
+      print('[loadData] Getting frequently bought products...');
+      frequentlyBoughtProvider.getFrequentlyBoughtProduct(1, reload);
+
+      print('---- HomeScreen.loadData finished successfully ----');
+
+    } catch (e, stackTrace) {
+      print('!!!!!! ERROR IN HomeScreen.loadData !!!!!!');
+      print(e);
+      print(stackTrace);
+      print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     }
-     wishListProvider.initWishList();
-
-    if(productProvider.latestProductModel == null || reload) {
-      productProvider.getLatestProductList(1, reload);
-    }
-
-
-    if(reload || productProvider.popularLocalProductModel == null){
-      productProvider.getPopularLocalProductList(1,  true, isUpdate: false);
-    }
-
-    if(reload) {
-       splashProvider.getPolicyPage();
-    }
-     categoryProvider.getCategoryList(reload, source: DataSourceEnum.local);
-
-    if(productProvider.flavorfulMenuProductMenuModel == null || reload) {
-      productProvider.getFlavorfulMenuProductMenuList(1, reload);
-    }
-
-    if(productProvider.recommendedProductModel == null || reload) {
-      productProvider.getRecommendedProductList(1, reload);
-    }
-
-     bannerProvider.getBannerList(reload);
-     searchProvider.getCuisineList(isReload: reload);
-     searchProvider.getSearchRecommendedData(isReload: reload);
-     frequentlyBoughtProvider.getFrequentlyBoughtProduct(1, reload);
-
   }
 }
 
@@ -152,6 +175,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Start hint rotation and animation
     _startHintRotation();
     _progressController.forward();
+
+    // ---> ADD THIS BLOCK TO CALL loadData <--- 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('*** Calling HomeScreen.loadData from initState ***');
+      HomeScreen.loadData(true); 
+    });
+    // ---> END OF BLOCK <--- 
   }
   
   /**
@@ -622,6 +652,119 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           },
         )),
       ),
+    );
+  }
+
+  Widget _buildSubCategoryGrid(BuildContext context) {
+    // ACCESO DIRECTO A VARIABLES PRIVADAS (NO RECOMENDADO - SOLO PARA DEBUG/WORKAROUND)
+    return Consumer<CategoryProvider>(
+      builder: (context, categoryProvider, child) {
+        // --- Filter subcategories directly here --- 
+        List<CategoryModel>? subCategoryList;
+        // Use categoryProvider.categoryList and the correct getter for the selected category ID
+        if (categoryProvider.categoryList != null && categoryProvider.selectCategory != -1) { // Use selectCategory and check if it's valid (-1 might be initial state)
+          subCategoryList = categoryProvider.categoryList!
+              .where((cat) => cat.parentId == categoryProvider.selectCategory) // Use selectCategory here
+              .toList();
+        } else if (categoryProvider.categoryList != null && categoryProvider.selectCategory == -1 && categoryProvider.categoryList!.isNotEmpty) {
+           // Optional: If no category is selected (-1), maybe show subcategories of the first top-level category?
+           // Or simply leave subCategoryList null/empty
+           final firstTopLevel = categoryProvider.categoryList!.firstWhere((c) => c.parentId == 0 || c.parentId == null, orElse: () => CategoryModel(id: -1));
+           if(firstTopLevel.id != -1) {
+             subCategoryList = categoryProvider.categoryList!
+                 .where((cat) => cat.parentId == firstTopLevel.id) 
+                 .toList();
+           }
+        }
+        // --- End filtering --- 
+
+        // Show shimmer if loading OR if the main category list is still loading initially
+        if (categoryProvider.isLoading || (categoryProvider.categoryList == null && categoryProvider.isLoading)) {
+           // Use a Grid Shimmer layout
+          return SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall, vertical: Dimensions.paddingSizeLarge),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: ResponsiveHelper.isDesktop(context) ? 6 : ResponsiveHelper.isTab(context) ? 4 : 3,
+                crossAxisSpacing: Dimensions.paddingSizeSmall,
+                mainAxisSpacing: Dimensions.paddingSizeSmall,
+                childAspectRatio: 1.0, // Adjust aspect ratio as needed
+              ),
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) => const ProductShimmerWidget(isEnabled: true, isList: false, width: double.infinity), 
+                childCount: 6, // Show a few shimmer items
+              ),
+            ),
+          );
+        }
+
+        // Show message if list is empty after loading
+        if (subCategoryList == null || subCategoryList.isEmpty) {
+          return SliverToBoxAdapter(child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(Dimensions.paddingSizeLarge),
+              child: Text(getTranslated('no_subcategories_available', context) ?? 'No subcategories found'),
+            ),
+          ));
+        }
+
+        // Build the GridView for subcategories (uses the locally filtered subCategoryList)
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall, vertical: Dimensions.paddingSizeLarge),
+          sliver: SliverGrid.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount( 
+              crossAxisCount: ResponsiveHelper.isDesktop(context) ? 6 : ResponsiveHelper.isTab(context) ? 4 : 3,
+              crossAxisSpacing: Dimensions.paddingSizeSmall,
+              mainAxisSpacing: Dimensions.paddingSizeSmall,
+              childAspectRatio: 1.0,
+            ),
+            itemCount: subCategoryList.length,
+            itemBuilder: (context, index) {
+              // Add Null Check with !
+              CategoryModel subCategory = subCategoryList![index]; 
+              return InkWell(
+                onTap: () {
+                   RouterHelper.getCategoryRoute(subCategory);
+                },
+                borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+                 child: Container(
+                   decoration: BoxDecoration(
+                     color: Theme.of(context).cardColor,
+                     borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+                     boxShadow: [BoxShadow(
+                       color: Theme.of(context).shadowColor.withOpacity(0.05),
+                       blurRadius: 5, spreadRadius: 1, offset: const Offset(0, 2),
+                     )],
+                   ),
+                   child: Column(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       ClipRRect(
+                         borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
+                         child: CustomAssetImageWidget(
+                           subCategory.image != null && subCategory.image!.isNotEmpty
+                               ? '${Provider.of<SplashProvider>(context, listen: false).baseUrls?.categoryImageUrl}/${subCategory.image}'
+                               : Images.placeholderImage,
+                           width: 50, height: 50, fit: BoxFit.cover, 
+                         ),
+                       ),
+                        const SizedBox(height: Dimensions.paddingSizeSmall),
+                       Padding(
+                         padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeExtraSmall),
+                         child: Text(
+                           subCategory.name ?? '', maxLines: 2, overflow: TextOverflow.ellipsis,
+                           textAlign: TextAlign.center,
+                           style: rubikMedium.copyWith(fontSize: Dimensions.fontSizeExtraSmall),
+                         ),
+                       ),
+                     ],
+                   ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
