@@ -7,9 +7,10 @@ import 'package:flutter_restaurant/features/auth/widgets/otp_verification_dialog
 import 'package:flutter_restaurant/helper/router_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_restaurant/localization/language_constrants.dart';
+import 'package:flutter_restaurant/utill/styles.dart';
 
 /// A screen that handles user authentication through phone number verification.
-/// 
+///
 /// This screen provides functionality for users to enter their phone number,
 /// receive a verification code, and complete the login process.
 class LoginScreen extends StatefulWidget {
@@ -290,6 +291,55 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               onOtpSent: _showOtpVerificationDialog,
                             ),
                           ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (Navigator.canPop(context))
+                                  Center(
+                                    child: TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        getTranslated('cancel', context)!,
+                                        style: rubikMedium.copyWith(
+                                          color: Theme.of(context).primaryColor,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(width: 10), // Espacio entre los botones
+                                TextButton(
+                                  onPressed: () {
+                                    RouterHelper.getDashboardRoute(
+                                      'home',
+                                      action: RouteAction.pushNamedAndRemoveUntil,
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    getTranslated('enter_as_guest', context)!,
+                                    style: rubikMedium.copyWith(
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -306,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   /// Shows the OTP verification dialog
   void _showOtpVerificationDialog(String phone, String tempToken) {
     if (!mounted) return;
-    
+
     // Obtenemos la instancia actualizada del servicio de manera segura
     AuthService authService;
     try {
@@ -320,7 +370,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
       return;
     }
-    
+
     try {
       showDialog(
         context: context,
@@ -362,8 +412,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     try {
       // Navigate to dashboard or main page
       RouterHelper.getDashboardRoute(
-        'home', 
-        action: RouteAction.pushNamedAndRemoveUntil
+        'home',
+        action: RouteAction.pushNamedAndRemoveUntil,
       );
     } catch (e) {
       debugPrint('Navigation error: $e');

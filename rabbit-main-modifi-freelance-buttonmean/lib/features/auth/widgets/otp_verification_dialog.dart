@@ -404,7 +404,6 @@ class _OtpVerificationDialogState extends State<OtpVerificationDialog> {
       final AuthResponseModel result = await widget.authService.verifyOTP(
         phone: widget.phone, 
         otp: completeOtp, 
-        tempToken: widget.tempToken,
       );
       
       if (!mounted) return;

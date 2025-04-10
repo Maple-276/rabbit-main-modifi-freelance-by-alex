@@ -4,50 +4,118 @@ import 'package:flutter_restaurant/features/auth/providers/auth_provider.dart';
 import 'package:flutter_restaurant/helper/number_checker_helper.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth; // Use prefix fb_auth
 
 /// Service to handle authentication-related operations
 class AuthService {
   final AuthProvider _authProvider;
-  
-  // Local storage for development/demo mode
+  final fb_auth.FirebaseAuth _firebaseAuth = fb_auth.FirebaseAuth.instance; // Use prefix
+
+  // Store verification ID and token for later use
+  String? _verificationId;
+  int? _resendToken;
+
+  // Local storage for development/demo mode (can be removed later)
   final Map<String, String> _otpStorage = {};
 
   AuthService(this._authProvider);
 
-  /// Sends verification code to phone number
+  /// Sends verification code to phone number using Firebase Auth
   ///
-  /// Returns a response with success status and token information
-  Future<AuthResponseModel> sendVerificationCode(String phone) async {
+  /// Returns a response with success status and message.
+  /// The verificationId and resendToken are stored internally.
+  Future<AuthResponseModel> sendVerificationCode(String phoneNumber) async {
+    // Reset stored values
+    _verificationId = null;
+    _resendToken = null;
+
+    Completer<AuthResponseModel> completer = Completer();
+
     try {
-      // If we were in production, uncomment the following line:
-      // return await _sendOTPViaAPI(phone);
-      
-      // For development/demonstration, we use a locally generated OTP
-      return await _sendMockOTP(phone);
-    } catch (e) {
-      debugPrint('OTP sending error: $e');
-      return AuthResponseModel(
-        success: false,
-        message: 'Error sending code: $e',
+      await _firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phoneNumber, // Make sure phoneNumber includes country code, e.g., +11234567890
+        
+        verificationCompleted: (fb_auth.PhoneAuthCredential credential) async {
+          // Auto-retrieval or instant verification (Android only)
+          debugPrint('Firebase Auth: Verification Completed Automatically');
+          try {
+            // Sign in directly
+            fb_auth.UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
+            String? firebaseToken = await userCredential.user?.getIdToken();
+            debugPrint('Firebase Auth: Auto Sign-in successful.');
+            // Complete with success and Firebase token
+            if (!completer.isCompleted) {
+              completer.complete(AuthResponseModel(
+                success: true,
+                message: 'Verification successful (auto)',
+                token: firebaseToken, // Actual Firebase token
+                userId: userCredential.user?.uid.hashCode, // Or use a different way to get a user ID
+              ));
+            }
+          } on fb_auth.FirebaseAuthException catch (e) {
+             debugPrint('Firebase Auth: Auto Sign-in Error: ${e.code} - ${e.message}');
+             if (!completer.isCompleted) {
+              completer.complete(AuthResponseModel(success: false, message: 'Auto verification failed: ${e.message}'));
+            }
+          }
+        },
+
+        verificationFailed: (fb_auth.FirebaseAuthException e) {
+          debugPrint('Firebase Auth: Verification Failed: ${e.code} - ${e.message}');
+          // Handle errors like invalid phone number, quota exceeded, etc.
+          String errorMessage = 'Verification failed: ${e.message}';
+          if (e.code == 'invalid-phone-number') {
+            errorMessage = 'Invalid phone number provided.';
+          } else if (e.code == 'too-many-requests') {
+            errorMessage = 'Too many requests. Please try again later.';
+          }
+          if (!completer.isCompleted) {
+            completer.complete(AuthResponseModel(success: false, message: errorMessage));
+          }
+        },
+
+        codeSent: (String verificationId, int? resendToken) {
+          debugPrint('Firebase Auth: Code Sent. Verification ID: $verificationId');
+          // Store verificationId and resendToken to use when verifying the code manually
+          _verificationId = verificationId;
+          _resendToken = resendToken;
+          // Complete with success, indicating code was sent
+           if (!completer.isCompleted) {
+            completer.complete(AuthResponseModel(
+              success: true,
+              message: 'Verification code sent successfully.',
+              // Pass verificationId back if needed by the UI/Provider layer
+              // tempToken: verificationId, 
+            ));
+          }
+        },
+
+        codeAutoRetrievalTimeout: (String verificationId) {
+          debugPrint('Firebase Auth: Code Auto Retrieval Timeout. Verification ID: $verificationId');
+          // Called when auto-retrieval times out (Android only)
+          // Store verificationId if not already stored
+          _verificationId ??= verificationId;
+          // You might want to inform the user or just wait for manual code entry
+          // No need to complete the completer here usually, as codeSent should have fired.
+        },
+
+        // Optional: Force resent token for subsequent attempts
+        forceResendingToken: _resendToken,
+        
+        // Optional: Timeout duration
+        // timeout: const Duration(seconds: 60), 
       );
-    }
-  }
-  
-  /// Method that calls the real API to send OTP (for production)
-  Future<AuthResponseModel> _sendOTPViaAPI(String phone) async {
-    try {
-      // Here we would implement the actual API call
-      // Example:
-      // final apiResponse = await _authProvider.sendOTPForVerification(phone);
-      // return AuthResponseModel.fromJson(apiResponse.data);
-      
-      // As a placeholder, we return an error
-      throw UnimplementedError('OTP API not implemented');
     } catch (e) {
-      rethrow;
+      debugPrint('Firebase Auth: Error calling verifyPhoneNumber: $e');
+       if (!completer.isCompleted) {
+        completer.complete(AuthResponseModel(success: false, message: 'Error initiating verification: $e'));
+      }
     }
+
+    // Return the future from the completer
+    return completer.future;
   }
-  
+
   /// Method that simulates sending OTP for development/demonstration
   Future<AuthResponseModel> _sendMockOTP(String phone) async {
     await Future.delayed(const Duration(seconds: 1));
@@ -90,40 +158,55 @@ class AuthService {
   ///
   /// Returns authentication result with token on success
   Future<AuthResponseModel> verifyOTP({
-    required String phone, 
+    required String phone, // Phone might not be needed if verificationId is global
     required String otp, 
-    required String tempToken,
+    // required String tempToken, // We will use the stored _verificationId instead
   }) async {
+    // Check if we have a verificationId stored from codeSent
+    if (_verificationId == null) {
+      return AuthResponseModel(success: false, message: 'Verification process not initiated or timed out.');
+    }
+
     try {
-      // If we were in production, uncomment the following line:
-      // return await _verifyOTPViaAPI(phone, otp, tempToken);
-      
-      // For development/demonstration, we verify against local storage
-      return await _verifyMockOTP(phone, otp, tempToken);
-    } catch (e) {
-      debugPrint('OTP verification error: $e');
-      return AuthResponseModel(
-        success: false,
-        message: 'Error verifying code: $e',
+      // Create the credential
+      fb_auth.PhoneAuthCredential credential = fb_auth.PhoneAuthProvider.credential(
+        verificationId: _verificationId!, 
+        smsCode: otp,
       );
-    }
-  }
-  
-  /// Method that calls the real API to verify OTP (for production)
-  Future<AuthResponseModel> _verifyOTPViaAPI(String phone, String otp, String tempToken) async {
-    try {
-      // Here we would implement the actual API call
-      // Example:
-      // final apiResponse = await _authProvider.verifyOTP(phone, otp, tempToken);
-      // return AuthResponseModel.fromJson(apiResponse.data);
-      
-      // As a placeholder, we return an error
-      throw UnimplementedError('OTP verification API not implemented');
+
+      // Sign the user in (or link) with the credential
+      fb_auth.UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
+      String? firebaseToken = await userCredential.user?.getIdToken(); // Get the actual Firebase ID token
+
+      debugPrint('Firebase Auth: Manual Sign-in successful.');
+
+      // Clear stored verification ID after successful sign-in
+      _verificationId = null;
+      _resendToken = null;
+
+      return AuthResponseModel(
+        success: true,
+        message: 'Verification successful',
+        token: firebaseToken, // Return the real Firebase token
+        userId: userCredential.user?.uid.hashCode, // Or use user.uid directly if needed as String
+      );
+
+    } on fb_auth.FirebaseAuthException catch (e) {
+      debugPrint('Firebase Auth: Sign-in Error: ${e.code} - ${e.message}');
+      String errorMessage = 'Verification failed: ${e.message}';
+      if (e.code == 'invalid-verification-code') {
+        errorMessage = 'Incorrect verification code.';
+      } else if (e.code == 'session-expired') {
+         errorMessage = 'The code has expired. Please request a new one.';
+      }
+      return AuthResponseModel(success: false, message: errorMessage);
+
     } catch (e) {
-      rethrow;
+      debugPrint('Firebase Auth: Unexpected error during sign-in: $e');
+      return AuthResponseModel(success: false, message: 'An unexpected error occurred during verification.');
     }
   }
-  
+
   /// Method that simulates OTP verification for development/demonstration
   Future<AuthResponseModel> _verifyMockOTP(String phone, String otp, String tempToken) async {
     await Future.delayed(const Duration(milliseconds: 1500));

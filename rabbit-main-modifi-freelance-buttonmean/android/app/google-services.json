@@ -1,13 +1,13 @@
 {
   "project_info": {
     "project_number": "885949333764",
-    "project_id": "restaurant-92675",
-    "storage_bucket": "restaurant-92675.firebasestorage.app"
+    "project_id": "rabbit-8cace",
+    "storage_bucket": "rabbit-8cace.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:885949333764:android:fdf33ee88edc6dcd031051",
+        "mobilesdk_app_id": "1:654682130983:android:9010d271bc2b1d175d5c02",
         "android_client_info": {
           "package_name": "com.rabbit.user"
         }

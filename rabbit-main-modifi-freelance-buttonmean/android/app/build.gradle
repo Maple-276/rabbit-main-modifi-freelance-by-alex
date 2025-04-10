@@ -25,7 +25,8 @@ if (flutterVersionName == null) {
 }
 
 def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
+// Use relative path from android/app/build.gradle to the root project directory
+def keystorePropertiesFile = file('../../key.properties') 
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
@@ -59,7 +60,8 @@ android {
         release {
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            // Also use relative path for the storeFile itself, resolved from the root.
+            storeFile keystoreProperties['storeFile'] ? file("../../${keystoreProperties['storeFile']}") : null 
             storePassword keystoreProperties['storePassword']
         }
     }
@@ -84,4 +86,3 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-analytics")
 }
-
