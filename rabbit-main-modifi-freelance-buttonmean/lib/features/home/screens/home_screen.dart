@@ -284,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     } catch (e) {
       debugPrint("Error al verificar cobertura: $e");
       
-      // Si hay algún error, asumimos que el usuario está en rango para no bloquear la aplicación
+      // If there's any error, assume the user is in range to avoid blocking the app
       return true;
     }
   }
@@ -328,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           actions: [
             TextButton(
               onPressed: () {
-                // Cerrar el diálogo
+                // Close the dialog
                 Navigator.of(context).pop();
               },
               style: TextButton.styleFrom(

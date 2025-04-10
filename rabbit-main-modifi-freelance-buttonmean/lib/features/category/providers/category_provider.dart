@@ -12,6 +12,7 @@ import 'package:flutter_restaurant/features/category/domain/reposotories/categor
 import 'package:flutter_restaurant/helper/api_checker_helper.dart';
 import 'package:flutter_restaurant/helper/custom_snackbar_helper.dart';
 import 'package:flutter_restaurant/data/datasource/remote/exception/api_error_handler.dart';
+import 'package:flutter_restaurant/features/category/data/local/local_category_data.dart';
 
 class CategoryProvider extends DataSyncProvider {
   final CategoryRepo? categoryRepo;
@@ -34,49 +35,13 @@ class CategoryProvider extends DataSyncProvider {
   bool get isLoading => _isLoading;
   String? get selectedSubCategoryId => _selectedSubCategoryId;
 
-  // Define the constant ID for the local Grocery category
-  static const String groceryCategoryId = '101';
-
-  // Define the local Grocery subcategories
-  final List<Map<String, dynamic>> _localGrocerySubcategoriesJson = [
-    {
-      "id": 1011, "name": "Chips", "parent_id": int.parse(groceryCategoryId),
-      "position": 1, "status": 1, "image": "assets/image/chips_icon.png", // Placeholder image
-      "created_at": "", "updated_at": "", "banner_image": ""
-    },
-    {
-      "id": 1012, "name": "Chocolate", "parent_id": int.parse(groceryCategoryId),
-      "position": 2, "status": 1, "image": "assets/image/chocolate_icon.png", // Placeholder image
-      "created_at": "", "updated_at": "", "banner_image": ""
-    },
-     {
-      "id": 1013, "name": "Beer", "parent_id": int.parse(groceryCategoryId),
-      "position": 3, "status": 1, "image": "assets/image/beer_icon.png", // Placeholder image
-      "created_at": "", "updated_at": "", "banner_image": ""
-    },
-    // Add more local subcategories as needed
-  ];
-
   Future<void> getCategoryList(bool reload) async {
     print('[CategoryProvider] getCategoryList called with reload: $reload, _categoryList is null: ${_categoryList == null}');
     if(_categoryList == null || reload) {
       print('[CategoryProvider] Condition met, proceeding to fetchAndSyncData...');
       _isLoading = true;
 
-      // Define the local Grocery category data
-      final Map<String, dynamic> groceryJson = {
-        "id": int.parse(groceryCategoryId),
-        "name": "Grocery",
-        "parent_id": 0,
-        "position": 0, // Position 0 to appear first
-        "status": 1,
-        "created_at": "", "updated_at": "", // Not relevant for local
-        "image": "assets/image/grocery_icon.png", // Ensure this asset exists
-        "banner_image": ""
-      };
-
       print('>>> [CategoryProvider] ABOUT TO CALL fetchAndSyncData <<<');
-      // Use only fetchFromClient, but provide required fetchFromLocal dummy
       fetchAndSyncData(
          fetchFromLocal: () => Future.value(ApiResponseModel<CacheResponseData>.withSuccess(CacheResponseData(id: -1, endPoint: '', header: '', response: '[]'))), // Dummy required
         fetchFromClient: () async => await categoryRepo!.getCategoryList<Response>(), 
@@ -96,9 +61,9 @@ class CategoryProvider extends DataSyncProvider {
              categoryJsonList = [];
           }
 
-          // --- Add the local Grocery category --- 
+          // --- Add the local Grocery category (using imported data) --- 
           print('[CategoryProvider] Adding local Grocery category...');
-          categoryJsonList.insert(0, groceryJson); // Insert at the beginning
+          categoryJsonList.insert(0, groceryCategoryJson); // Use imported groceryCategoryJson
           // --- End of adding Grocery --- 
 
           print('[CategoryProvider] Processing combined list with ${categoryJsonList.length} categories...');
@@ -138,20 +103,18 @@ class CategoryProvider extends DataSyncProvider {
 
   void getSubCategoryList(String categoryID, {String type = 'all', String? name}) async {
      print('[CategoryProvider] getSubCategoryList called for ID: $categoryID');
-    // --- Check if it's the local Grocery category --- 
-    if (categoryID == groceryCategoryId) {
+    // --- Check if it's the local Grocery category (use imported ID) --- 
+    if (categoryID == groceryCategoryId) { // Use imported groceryCategoryId
       print('[CategoryProvider] Handling local Grocery subcategories.');
       _subCategoryList = [];
       _isLoading = true;
-      // Delay this notification until after the build phase
       WidgetsBinding.instance.addPostFrameCallback((_) {
          notifyListeners(); 
       });
 
-      // await Future.delayed(Duration.zero); // Delay might not be needed now
-
       try {
-        _localGrocerySubcategoriesJson.forEach((subJson) {
+        // Use imported localGrocerySubcategoriesJson
+        localGrocerySubcategoriesJson.forEach((subJson) { 
           _subCategoryList!.add(CategoryModel.fromJson(subJson));
         });
         print('[CategoryProvider] Loaded ${_subCategoryList?.length} local Grocery subcategories.');
