@@ -316,24 +316,38 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                     ),
                                   ),
                                 const SizedBox(width: 10), // Espacio entre los botones
-                                TextButton(
+                                ElevatedButton.icon(
                                   onPressed: () {
-                                    RouterHelper.getDashboardRoute(
-                                      'home',
-                                      action: RouteAction.pushNamedAndRemoveUntil,
-                                    );
+                                    // Verificar que la ruta sea válida antes de navegar
+                                    try {
+                                      RouterHelper.getDashboardRoute(
+                                        'home',
+                                        action: RouteAction.pushNamedAndRemoveUntil,
+                                      );
+                                    } catch (e) {
+                                      debugPrint('Error de navegación: $e');
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(getTranslated('navigation_error', context) ?? 'Error de navegación'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
                                   },
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: Text(
+                                  icon: const Icon(Icons.person_outline, size: 18),
+                                  label: Text(
                                     getTranslated('enter_as_guest', context)!,
                                     style: rubikMedium.copyWith(
-                                      color: Theme.of(context).primaryColor,
                                       fontSize: 14,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.8),
+                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
                                 ),

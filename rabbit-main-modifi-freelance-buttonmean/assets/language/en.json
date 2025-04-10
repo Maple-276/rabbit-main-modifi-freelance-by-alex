@@ -233,6 +233,7 @@
   "enter_first_name": "Enter first name",
   "enter_last_name": "Enter last name",
   "guest": "Guest",
+  "enter_as_guest": "Enter as Guest",
   "login_as_a": "Login as a",
   "now_you_are_in_guest_mode": "Now you are in guest mode.\nPlease login to enjoy the more awesome features.",
   "guest_mode": "Guest Mode",

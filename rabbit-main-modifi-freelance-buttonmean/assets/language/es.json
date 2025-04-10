@@ -234,6 +234,7 @@
   "enter_first_name": "Introduce el nombre",
   "enter_last_name": "Introduce el apellido",
   "guest": "Invitado",
+  "enter_as_guest": "Ingresar como Invitado",
   "login_as_a": "Iniciar sesión como",
   "now_you_are_in_guest_mode": "Ahora estás en modo invitado.\nInicia sesión para disfrutar de las funciones más increíbles.",
   "guest_mode": "Modo invitado",
