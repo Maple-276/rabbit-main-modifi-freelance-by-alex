@@ -273,8 +273,7 @@ class _RecommendedCuisinesShimmerWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Shimmer(
             interval: const Duration(seconds: 1),
-            // color: Theme.of(context).shadowColor.withOpacity(0.05),
-            colorOpacity: 0.1,
+            color: Theme.of(context).shadowColor.withOpacity(0.2),
             enabled: true,
             child: Container(
               height: 20.0,
@@ -292,7 +291,7 @@ class _RecommendedCuisinesShimmerWidget extends StatelessWidget {
           child: Shimmer(
             duration: const Duration(seconds: 2),
             interval: const Duration(seconds: 1),
-            colorOpacity: 0.1,
+            color: Colors.grey.withOpacity(0.1),
             enabled: true,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeExtraSmall),
@@ -323,7 +322,6 @@ class _RecommendedCategoryShimmerWidget extends StatelessWidget {
         Shimmer(
           interval: const Duration(seconds: 1), // Delay between shimmers
           color: Theme.of(context).shadowColor.withOpacity(0.2), // Base color
-          colorOpacity: 0.1, // Opacity of shimmer
           enabled: true, // Enable shimmer effect
           child: Container(
             height: 20,
@@ -347,8 +345,7 @@ class _RecommendedCategoryShimmerWidget extends StatelessWidget {
           itemBuilder: (context, index) => Shimmer(
             duration: const Duration(seconds: 2),
             interval: const Duration(milliseconds: 300),
-            color: Theme.of(context).shadowColor.withOpacity(0.2),
-            colorOpacity: 0.5,
+            color: Colors.grey.withOpacity(0.5),
             enabled: true,
             child: Container(
               decoration: BoxDecoration(
@@ -382,4 +379,3 @@ class _RecommendedCategoryShimmerWidget extends StatelessWidget {
     );
   }
 }
-
