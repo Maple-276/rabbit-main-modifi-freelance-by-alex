@@ -25,7 +25,7 @@ dependencies:
   google_maps_flutter: ^2.6.1
   geocoding: ^2.1.0
   geolocator: ^10.0.0
-  shimmer_animation: 2.0.0
+  shimmer_animation: ^2.1.0+1
   url_launcher: ^6.2.6
   webview_flutter: ^4.7.0
   firebase_core: ^2.31.0
@@ -77,7 +77,7 @@ dependencies:
 
 dependency_overrides:
   country_code_picker: ^3.0.0
-  geolocator_android: 4.1.0
+  geolocator_android: ^4.4.0
 
 dev_dependencies:
   flutter_lints: ^4.0.0
