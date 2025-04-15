@@ -117,7 +117,7 @@ class ProductCardWidget extends StatelessWidget {
                           ),
 
                           /// for product description
-                          Expanded(child: _ProductDescriptionWidget(
+                          Flexible(child: _ProductDescriptionWidget(
                             product: product,
                             priceDiscount: priceDiscount,
                             startingPrice: startingPrice,
@@ -302,16 +302,17 @@ class _ProductDescriptionWidget extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall, vertical: Dimensions.paddingSizeExtraSmall),
-      child: Column(
-        crossAxisAlignment: isCenterAlign ?  CrossAxisAlignment.center : CrossAxisAlignment.start,
-        children: [
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 90), // Ajusta este valor según el diseño deseado
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: isCenterAlign ?  CrossAxisAlignment.center : CrossAxisAlignment.start,
+          children: [
 
           const SizedBox(height: Dimensions.paddingSizeDefault),
           Row(mainAxisAlignment: isCenterAlign ? MainAxisAlignment.center : MainAxisAlignment.start, children: [
-
-            Flexible(child: Text(product.name!, maxLines: 1, overflow: TextOverflow.ellipsis, style: rubikSemiBold)),
+            Flexible(child: Text(product.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: rubikSemiBold)),
             const SizedBox(width: Dimensions.paddingSizeSmall),
-
             if(isGroceryProduct)
               ProductTagWidget(product: product),
           ]),
@@ -339,7 +340,7 @@ class _ProductDescriptionWidget extends StatelessWidget {
 
         ],
       ),
-    );
+    ));
   }
 }
 
