@@ -981,7 +981,8 @@ class _CartBottomSheetWidgetState extends State<CartBottomSheetWidget> {
         const SizedBox(height: Dimensions.paddingSizeLarge),
 
         /// for Veg, non-veg tag
-        widget.product!.productType != null ? ConstrainedBox(
+        (widget.product?.attributes?.contains('veg') ?? false) || (widget.product?.attributes?.contains('non_veg') ?? false)
+          ? ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 120), child: _VegTagView(product: widget.product),
         ) : const SizedBox(),
 
@@ -1148,7 +1149,8 @@ class _CartProductDescription extends StatelessWidget {
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Text(getTranslated('description', context)!, style: rubikSemiBold),
 
-        product.productType != null && ResponsiveHelper.isMobile() ? _VegTagView(product: product) : const SizedBox(),
+        (((product.attributes?.contains('veg') ?? false) || (product.attributes?.contains('non_veg') ?? false)) && ResponsiveHelper.isMobile())
+          ? _VegTagView(product: product) : const SizedBox(),
       ]),
       const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
@@ -1184,9 +1186,16 @@ class _VegTagView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String? productTypeAttribute;
+    if (product?.attributes?.contains('veg') ?? false) {
+      productTypeAttribute = 'veg';
+    } else if (product?.attributes?.contains('non_veg') ?? false) {
+      productTypeAttribute = 'non_veg';
+    }
+
     return Consumer<SplashProvider>(
         builder: (context, splashProvider, _) {
-          return Visibility(visible: splashProvider.configModel!.isVegNonVegActive!, child: Container(
+          return Visibility(visible: (splashProvider.configModel?.isVegNonVegActive ?? false) && productTypeAttribute != null, child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor.withOpacity(0.05),
               borderRadius: BorderRadius.circular(Dimensions.radiusExtraLarge),
@@ -1195,12 +1204,12 @@ class _VegTagView extends StatelessWidget {
             child: SizedBox(height: 30, child: Row(children: [
 
               Padding(padding:  const EdgeInsets.all(Dimensions.paddingSizeExtraSmall), child: CustomAssetImageWidget(
-                Images.getImageUrl('${product!.productType}'), fit: BoxFit.fitHeight,
+                Images.getImageUrl(productTypeAttribute ?? ''), fit: BoxFit.fitHeight,
               )),
               const SizedBox(width: Dimensions.paddingSizeExtraSmall),
 
               Text(
-                getTranslated('${product!.productType}', context)!,
+                getTranslated(productTypeAttribute ?? '', context)!,
                 style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).hintColor),
               ),
 

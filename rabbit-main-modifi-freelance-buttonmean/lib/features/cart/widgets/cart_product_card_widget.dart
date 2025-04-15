@@ -19,8 +19,9 @@ import 'package:provider/provider.dart';
 
 class CartProductCardWidget extends StatelessWidget {
   final Product product;
+  final bool isGroceryProduct;
 
-  const CartProductCardWidget({super.key, required this.product});
+  const CartProductCardWidget({super.key, required this.product, this.isGroceryProduct = false});
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +75,8 @@ class CartProductCardWidget extends StatelessWidget {
                       )),
                       const SizedBox(width: Dimensions.paddingSizeExtraSmall),
 
-                      ProductTagWidget(product: product),
+                      if(isGroceryProduct)
+                        ProductTagWidget(product: product),
                     ]),
                     const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
@@ -154,8 +156,3 @@ class CartProductCardWidget extends StatelessWidget {
     );
   }
 }
-
-
-
-
-

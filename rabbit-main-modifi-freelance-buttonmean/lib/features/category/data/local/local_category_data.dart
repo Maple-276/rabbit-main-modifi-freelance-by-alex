@@ -52,4 +52,16 @@ final List<Map<String, dynamic>> localGrocerySubcategoriesJson = [
     "banner_image": ""
   },
   // Add more local subcategories as needed
-]; 
+  {
+    "id": 1014, 
+    "name": "Snacks", 
+    "parent_id": int.parse(groceryCategoryId), // Pertenece a Grocery
+    "position": 4, // Siguiente posición
+    "status": 1, // Activo
+    "image": "assets/image/snacks.png", // Icono proporcionado
+    "created_at": "", 
+    "updated_at": "", 
+    "banner_image": "" // Banner vacío por ahora
+  },
+  // Add more local subcategories as needed
+];

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class ProductModel {
   int? totalSize;
   int? limit;
@@ -71,6 +73,8 @@ class Product {
   double? _mainPrice;
   bool? _isChanged;
   String? _changeReason;
+  int? _weight;
+  String? _productType;
 
   Product(
       {int? id,
@@ -98,6 +102,8 @@ class Product {
         double? mainPrice,
         bool? isChanged,
         String? changeReason,
+        int? weight,
+        String? productType,
       }) {
     _id = id;
     _name = name;
@@ -124,6 +130,8 @@ class Product {
     _mainPrice = mainPrice;
     _isChanged = isChanged;
     _changeReason = changeReason;
+    _weight = weight;
+    _productType = productType;
   }
 
   int? get id => _id;
@@ -141,28 +149,31 @@ class Product {
   String? get updatedAt => _updatedAt;
   List<String>? get attributes => _attributes;
   List<CategoryId>? get categoryIds => _categoryIds;
-  // List<ChoiceOption> get choiceOptions => _choiceOptions;
+  List<ChoiceOption>? get choiceOptions => _choiceOptions;
   double? get discount => _discount;
   String? get discountType => _discountType;
   String? get taxType => _taxType;
   int? get setMenu => _setMenu;
   List<Rating>? get rating => _rating;
-  String? productType;
   BranchProduct? get branchProduct => _branchProduct;
+  double? get mainPrice => _mainPrice;
   bool? get isChanged => _isChanged;
   String? get changeReason => _changeReason;
-
+  int? get weight => _weight;
+  String? get productType => _productType;
 
   Product.fromJson(Map<String, dynamic> json) {
     _id = json['id'];
     _name = json['name'];
     _description = json['description'];
     _image = json['image'];
-    _price = json['price'].toDouble();
+    _price = json['price']?.toDouble();
     if (json['variations'] != null) {
       _variations = [];
       json['variations'].forEach((v) {
-        if(!v.containsKey('price')){
+        if(v is Map<String, dynamic> && v.containsKey('price')) {
+          _variations!.add(Variation.fromJson(v));
+        } else if (v is Map<String, dynamic>){
           _variations!.add(Variation.fromJson(v));
         }
 
@@ -176,17 +187,17 @@ class Product {
        });
 
      }catch(e){
+       debugPrint('Error parsing addons: $e');
        _addOns = [];
      }
     }
-    _tax = json['tax'].toDouble();
-    _tax = json['tax'].toDouble();
+    _tax = json['tax']?.toDouble();
     _availableTimeStarts = json['available_time_starts'] ?? '';
     _availableTimeEnds = json['available_time_ends'] ?? '' ;
     _status = json['status'] ?? 0;
     _createdAt = json['created_at'];
     _updatedAt = json['updated_at'];
-    _attributes = json['attributes'].cast<String>();
+    _attributes = json['attributes']?.cast<String>() ?? [];
     if (json['category_ids'] != null) {
       _categoryIds = [];
       json['category_ids'].forEach((v) {
@@ -199,35 +210,21 @@ class Product {
         _choiceOptions!.add(ChoiceOption.fromJson(v));
       });
     }
-    _discount = json['discount'].toDouble();
+    _discount = json['discount']?.toDouble();
     _discountType = json['discount_type'];
-    _taxType = json['tax_type'];
-    _setMenu = json['set_menu'];
+    _taxType = json['tax_type'] ?? '';
+    _setMenu = json['set_menu'] ?? 0;
+    _weight = int.tryParse('${json['weight']}');
+    _productType = json['product_type'];
     if (json['rating'] != null) {
       _rating = [];
       json['rating'].forEach((v) {
         _rating!.add(Rating.fromJson(v));
       });
     }
-    productType=  json["product_type"];
-    if(json['branch_product'] != null) {
-      _branchProduct =  BranchProduct.fromJson(json['branch_product']);
-      _price = _branchProduct!.price;
-      _discount = _branchProduct!.discount;
-      _discountType = _branchProduct!.discountType;
-
-    }else{
-      _branchProduct = null;
-    }
-    _mainPrice = double.tryParse('${json['price']}');
-
-    if(json.containsKey('is_changed')){
-      _isChanged = '${json['is_changed']}'.contains('1');
-    }
-
-    if(json.containsKey('change_reason')){
-      _changeReason = json['change_reason'];
-    }
+    _branchProduct = json['branch_product'] != null
+        ? BranchProduct.fromJson(json['branch_product'])
+        : null;
 
   }
 
@@ -241,8 +238,6 @@ class Product {
     if (_variations != null) {
       data['variations'] = _variations!.map((v) => v.toJson()).toList();
     }
-
-
     if (_addOns != null) {
       data['add_ons'] = _addOns!.map((v) => v.toJson()).toList();
     }
@@ -252,6 +247,8 @@ class Product {
     data['status'] = _status;
     data['created_at'] = _createdAt;
     data['updated_at'] = _updatedAt;
+    data['weight'] = _weight;
+    data['product_type'] = _productType;
     data['attributes'] = _attributes;
     if (_categoryIds != null) {
       data['category_ids'] = _categoryIds!.map((v) => v.toJson()).toList();
@@ -264,14 +261,19 @@ class Product {
     data['discount_type'] = _discountType;
     data['tax_type'] = _taxType;
     data['set_menu'] = _setMenu;
-    data['main_price'] = _mainPrice;
     if (_rating != null) {
       data['rating'] = _rating!.map((v) => v.toJson()).toList();
     }
-    data['branch_product'] = _branchProduct;
+     if (_branchProduct != null) {
+      data['branch_product'] = _branchProduct!.toJson();
+    }
+    data['main_price'] = _mainPrice;
+    data['is_changed'] = _isChanged;
+    data['change_reason'] = _changeReason;
     return data;
   }
 }
+
 class BranchProduct {
   int? id;
   int? productId;

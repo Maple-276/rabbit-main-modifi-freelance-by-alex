@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_restaurant/common/widgets/custom_image_widget.dart';
-import 'package:flutter_restaurant/common/widgets/custom_loader_widget.dart';
 import 'package:flutter_restaurant/common/widgets/filter_button_widget.dart';
 import 'package:flutter_restaurant/common/widgets/footer_widget.dart';
 import 'package:flutter_restaurant/common/widgets/no_data_widget.dart';
@@ -11,19 +10,17 @@ import 'package:flutter_restaurant/features/category/providers/category_provider
 import 'package:flutter_restaurant/features/home/widgets/product_card_widget.dart';
 import 'package:flutter_restaurant/features/splash/providers/splash_provider.dart';
 import 'package:flutter_restaurant/helper/responsive_helper.dart';
-import 'package:flutter_restaurant/common/providers/product_provider.dart';
 import 'package:flutter_restaurant/localization/language_constrants.dart';
 import 'package:flutter_restaurant/utill/dimensions.dart';
 import 'package:flutter_restaurant/utill/images.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'dart:async';
-import 'package:flutter_restaurant/common/widgets/custom_text_field_widget.dart';
-import 'package:flutter_restaurant/features/search/providers/search_provider.dart';
 import 'package:flutter_restaurant/helper/router_helper.dart';
 import 'package:flutter_restaurant/common/widgets/enhanced_back_button.dart';
+import 'package:flutter_restaurant/common/models/product_model.dart';
+import 'package:flutter_restaurant/features/category/data/local/local_category_data.dart'; // Import local data
 
 class CategoryScreen extends StatefulWidget {
   final String categoryId;
@@ -37,8 +34,24 @@ class CategoryScreen extends StatefulWidget {
 
 class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStateMixin {
   int _tabIndex = 0;
-  String _type = 'all';
+  String _selectedWeightFilter = 'all'; // 'all', 'small', 'medium', 'large'
+  String _selectedVegFilter = 'all'; // 'all', 'veg', 'non_veg'
   final ScrollController _scrollController = ScrollController();
+  
+  // Define weight filter options and labels
+  static const Map<String, String> _weightFilterOptions = {
+    'all': 'Todos',
+    'small': 'Pequeño', // <= 300
+    'medium': 'Mediano', // > 300 && < 700
+    'large': 'Grande', // >= 700
+  };
+
+  // Define vegetarian filter options and labels
+  static const Map<String, String> _vegFilterOptions = {
+    'all': 'Todos',
+    'veg': 'Vegetariano',
+    'non_veg': 'No Vegetariano',
+  };
   
   // Variables for suggestion rotation functionality
   final List<String> _searchHints = [
@@ -80,8 +93,11 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
   void _loadData() async {
    final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
 
-   categoryProvider.getCategoryList(false);
+   await categoryProvider.getCategoryList(false); // Add await here
+   // Fetch all subcategories first
    categoryProvider.getSubCategoryList(widget.categoryId);
+   // Then fetch all products for the main category initially
+   await categoryProvider.getCategoryProductList(widget.categoryId, 1); // Removed type parameter
  }
 
 
@@ -96,9 +112,6 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-   final SplashProvider splashProvider = Provider.of<SplashProvider>(context, listen: false);
-   final productProvider = Provider.of<ProductProvider>(context, listen: false);
-
    final Size size = MediaQuery.sizeOf(context);
    final double realSpaceNeeded = (size.width - Dimensions.webScreenWidth) / 2;
    final isDesktop = ResponsiveHelper.isDesktop(context);
@@ -107,15 +120,23 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
       appBar: isDesktop ? const PreferredSize(preferredSize: Size.fromHeight(100), child: WebAppBarWidget()) : null,
       body: Consumer<CategoryProvider>(
         builder: (context, category, child) {
+          // Determine if the current category is grocery
+          final bool isGrocery = category.selectedSubCategoryId == groceryCategoryId;
+
           return category.isLoading || category.categoryList == null ?
           _categoryShimmer(context, size.height, category) :
           PaginatedListWidget(
             scrollController: _scrollController,
             onPaginate: (int? offset) async {
-             await category.getCategoryProductList('${category.selectedSubCategoryId}', offset ?? 1, type: _type);
-
+             // Pagination should respect the current filter - modify provider if needed
+             // For client-side filtering, this might just fetch the next page of 'all' items
+             await category.getCategoryProductList(
+               '${category.selectedSubCategoryId}',
+               offset ?? 1,
+               // type: _selectedWeightFilter, // Remove type or ensure provider handles it for pagination
+             );
             },
-            totalSize: category.categoryProductModel?.totalSize,
+            totalSize: category.categoryProductModel?.totalSize, // Might need adjustment if filtering client-side
             offset: category.categoryProductModel?.offset,
             limit: category.categoryProductModel?.limit,
             isDisableWebLoader: !ResponsiveHelper.isDesktop(context),
@@ -231,13 +252,17 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
                         indicatorColor: Theme.of(context).primaryColor,
                         labelColor: Theme.of(context).textTheme.bodyLarge!.color,
                         tabs: _tabs(category),
-                        onTap: (int index) {
-                          _type = 'all';
+                        onTap: (int index) async { // Make async
+                          // Reset filter when changing tabs
+                          _selectedWeightFilter = 'all';
+                          _selectedVegFilter = 'all';
                           _tabIndex = index;
                           if(index == 0) {
-                            category.getCategoryProductList(widget.categoryId, 1);
+                            // Fetch all products for the main category
+                            await category.getCategoryProductList(widget.categoryId, 1); // Add await
                           }else {
-                            category.getCategoryProductList(category.subCategoryList![index-1].id.toString(), 1);
+                            // Fetch all products for the selected subcategory
+                            await category.getCategoryProductList(category.subCategoryList![index-1].id.toString(), 1); // Add await
                           }
                         },
                       ),
@@ -245,42 +270,84 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
                   ),
                 ),
 
-                SliverToBoxAdapter(child: FilterButtonWidget(
-                  type: _type,
-                  items: productProvider.productTypeList,
-                  onSelected: (selected) {
-                    _type = selected;
-                    category.getCategoryProductList(category.selectedSubCategoryId, 1,  type: _type);
-                  },
-                )),
+                // Conditionally show filters
+                SliverToBoxAdapter(child: isGrocery
+                  ? FilterButtonWidget( // Show Size filter for Grocery
+                      type: _weightFilterOptions[_selectedWeightFilter]!,
+                      items: _weightFilterOptions.values.toList(),
+                      onSelected: (selectedLabel) {
+                        String selectedKey = _weightFilterOptions.entries
+                            .firstWhere((entry) => entry.value == selectedLabel, orElse: () => _weightFilterOptions.entries.first)
+                            .key;
+                        setState(() {
+                          _selectedWeightFilter = selectedKey;
+                        });
+                      },
+                    )
+                  : FilterButtonWidget( // Show Veg filter for non-Grocery
+                      type: _vegFilterOptions[_selectedVegFilter]!, 
+                      items: _vegFilterOptions.values.toList(),
+                      onSelected: (selectedLabel) {
+                        String selectedKey = _vegFilterOptions.entries
+                            .firstWhere((entry) => entry.value == selectedLabel, orElse: () => _vegFilterOptions.entries.first)
+                            .key;
+                        setState(() {
+                          _selectedVegFilter = selectedKey;
+                        });
+                      },
+                    ),
+                ),
 
                 SliverPadding(
                   padding: ResponsiveHelper.isDesktop(context) ? EdgeInsets.symmetric(
                     horizontal: realSpaceNeeded,
                     vertical: Dimensions.paddingSizeSmall,
                   ) : const EdgeInsets.all(Dimensions.paddingSizeSmall),
-                  sliver: category.categoryProductModel == null || (category.categoryProductModel?.products?.isNotEmpty ?? false) ? SliverGrid.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isDesktop ? 5 : ResponsiveHelper.isTab(context) ? 3 : 2,
-                      crossAxisSpacing: Dimensions.paddingSizeSmall,
-                      mainAxisSpacing: Dimensions.paddingSizeSmall,
-                      mainAxisExtent: 260,
-                    ),
-                    itemCount: category.categoryProductModel == null ? 10 : category.categoryProductModel!.products!.length,
-                    itemBuilder: (context, index) {
-                      if(category.categoryProductModel == null) {
-                        return const ProductShimmerWidget(
-                        isEnabled: true,
-                        isList: false,
-                        width: double.maxFinite,
+                  sliver: Builder( // Use Builder to access the latest category provider state
+                    builder: (context) {
+                      // Get potentially paginated but unfiltered list from provider
+                      final allProductsInModel = category.categoryProductModel?.products ?? [];
+                      
+                      // Apply client-side filter based on category type
+                      final filteredProducts = _getFilteredProducts(allProductsInModel, isGrocery);
+                      
+                      // Determine if we should show NoDataWidget
+                      // Show NoData only if the model is loaded but the *filtered* list is empty
+                      final bool showNoData = category.categoryProductModel != null && filteredProducts.isEmpty;
+                      
+                      return showNoData
+                      ? const SliverToBoxAdapter(child: NoDataWidget(isFooter: false))
+                      : SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisSpacing: Dimensions.paddingSizeSmall, mainAxisSpacing: Dimensions.paddingSizeSmall,
+                          crossAxisCount: isDesktop ? 5 : ResponsiveHelper.isTab(context) ? 3 : 2,
+                          mainAxisExtent: 260,
+                        ),
+                        // Use filtered list length. Handle null case for initial loading shimmer.
+                        itemCount: category.categoryProductModel == null ? 10 : filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          // Show shimmer if model is null (initial load)
+                          if(category.categoryProductModel == null) {
+                            return const ProductShimmerWidget(
+                            isEnabled: true,
+                            isList: false,
+                            width: double.maxFinite,
+                          );
+                          }
+                          // Use the filtered product list
+                          // Add safety check in case itemCount calculation was off somehow during filtering
+                          if (index >= filteredProducts.length) {
+                            return const SizedBox.shrink(); // Should not happen
+                          }
+                          return ProductCardWidget(
+                            product: filteredProducts[index],
+                            imageWidth: 260,
+                            isGroceryProduct: isGrocery, // Pass the flag based on ID comparison
+                          );
+                        },
                       );
-                      }
-                      return ProductCardWidget(
-                        product: category.categoryProductModel!.products![index],
-                        imageWidth: 260,
-                      );
-                    },
-                  ) : const SliverToBoxAdapter(child: NoDataWidget(isFooter: false)),
+                    }
+                  ),
                 ),
 
 
@@ -298,7 +365,37 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
     );
   }
 
-  SingleChildScrollView _categoryShimmer(BuildContext context, double height, CategoryProvider category) {
+  // Helper method to apply the correct filter based on category type
+  List<Product> _getFilteredProducts(List<Product> allProducts, bool isGrocery) {
+    if (isGrocery) { // Apply weight filter for Grocery
+      if (_selectedWeightFilter == 'all') {
+        return allProducts;
+      }
+      return allProducts.where((product) {
+        // Use the actual weight field from the Product model
+        final weight = product.weight; 
+        if (weight == null) return false; // Skip products without weight data
+
+        if (_selectedWeightFilter == 'small' && weight <= 300) return true;
+        if (_selectedWeightFilter == 'medium' && weight > 300 && weight < 700) return true;
+        if (_selectedWeightFilter == 'large' && weight >= 700) return true; 
+        return false;
+      }).toList();
+    } else { // Apply vegetarian filter for non-Grocery
+      if (_selectedVegFilter == 'all') {
+        return allProducts;
+      }
+      return allProducts.where((product) {
+        // Check the productType field (added in previous steps)
+        bool isActuallyVeg = product.productType == 'veg'; // Example: 'veg' type
+        if (_selectedVegFilter == 'veg' && isActuallyVeg) return true;
+        if (_selectedVegFilter == 'non_veg' && !isActuallyVeg) return true;
+        return false;
+      }).toList();
+    }
+  }
+
+  Widget _categoryShimmer(BuildContext context, double height, CategoryProvider category) {
    final isDesktop = ResponsiveHelper.isDesktop(context);
 
     return SingleChildScrollView(child: Column(children: [
@@ -339,22 +436,6 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
     return tabList;
   }
 
-  // Gets the translated hint text for the current index
-  // If the translation is not available, returns a default text
-  String _getCurrentHintText(BuildContext context) {
-    String? translatedText = getTranslated(_searchHints[_currentHintIndex], context);
-    
-    // Check if the translation is valid or if we need to use fallback text
-    // An invalid translation might contain underscores or be identical to the key
-    if (translatedText == null || 
-        translatedText.contains('_') || 
-        translatedText == _searchHints[_currentHintIndex]) {
-      return '¿Buscas algo delicioso?'; // Spanish fallback text
-    }
-    
-    return translatedText;
-  }
-  
   // Method to handle focus changes in the search field
   void _onFocusChange() {
     if (mounted) {
@@ -370,7 +451,7 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
       });
     }
   }
-  
+
   // Enhanced rotation method with animations
   void _startHintRotation() {
     // Cancel existing timers

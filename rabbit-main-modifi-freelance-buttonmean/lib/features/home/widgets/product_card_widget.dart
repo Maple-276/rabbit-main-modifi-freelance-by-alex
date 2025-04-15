@@ -29,6 +29,7 @@ class ProductCardWidget extends StatelessWidget {
   final double imageWidth;
   final ProductGroup productGroup;
   final bool isShowBorder;
+  final bool isGroceryProduct;
 
   const ProductCardWidget({
     super.key,
@@ -38,6 +39,7 @@ class ProductCardWidget extends StatelessWidget {
     this.imageWidth = 220,
     this.productGroup = ProductGroup.common,
     this.isShowBorder = false,
+    this.isGroceryProduct = false,
   });
 
   @override
@@ -120,6 +122,7 @@ class ProductCardWidget extends StatelessWidget {
                             priceDiscount: priceDiscount,
                             startingPrice: startingPrice,
                             productGroup: ProductGroup.common,
+                            isGroceryProduct: isGroceryProduct,
                           )),
                         ]),
 
@@ -175,6 +178,7 @@ class ProductCardWidget extends StatelessWidget {
                                 priceDiscount: priceDiscount,
                                 startingPrice: startingPrice,
                                 productGroup: productGroup,
+                                isGroceryProduct: isGroceryProduct,
                               ),
                             ]),
                           ),
@@ -206,6 +210,7 @@ class ProductCardWidget extends StatelessWidget {
                       priceDiscount: priceDiscount,
                       startingPrice: startingPrice,
                       productGroup: productGroup,
+                      isGroceryProduct: isGroceryProduct,
                     ),
                   ]),
 
@@ -276,17 +281,19 @@ class _ProductImageWidget extends StatelessWidget {
 }
 
 class _ProductDescriptionWidget extends StatelessWidget {
+  final Product product;
+  final double? startingPrice;
+  final double? priceDiscount;
+  final ProductGroup productGroup;
+  final bool isGroceryProduct;
+
   const _ProductDescriptionWidget({
     required this.product,
-    required this.priceDiscount,
     required this.startingPrice,
+    required this.priceDiscount,
     required this.productGroup,
+    required this.isGroceryProduct,
   });
-
-  final Product product;
-  final double? priceDiscount;
-  final double? startingPrice;
-  final ProductGroup productGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +312,8 @@ class _ProductDescriptionWidget extends StatelessWidget {
             Flexible(child: Text(product.name!, maxLines: 1, overflow: TextOverflow.ellipsis, style: rubikSemiBold)),
             const SizedBox(width: Dimensions.paddingSizeSmall),
 
-            ProductTagWidget(product: product),
+            if(isGroceryProduct)
+              ProductTagWidget(product: product),
           ]),
           const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
@@ -353,8 +361,3 @@ class _DiscountTagWidget extends StatelessWidget {
     ));
   }
 }
-
-
-
-
-
