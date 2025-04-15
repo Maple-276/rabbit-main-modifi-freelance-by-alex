@@ -313,7 +313,20 @@ class _ProductDescriptionWidget extends StatelessWidget {
           Row(mainAxisAlignment: isCenterAlign ? MainAxisAlignment.center : MainAxisAlignment.start, children: [
             Flexible(child: Text(product.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: rubikSemiBold)),
             const SizedBox(width: Dimensions.paddingSizeSmall),
-            if(isGroceryProduct)
+            if(isGroceryProduct && product.weight != null)
+              Container(
+                margin: const EdgeInsets.only(left: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  product.weight.toString(),
+                  style: rubikRegular.copyWith(fontSize: 12, color: Theme.of(context).primaryColor),
+                ),
+              )
+            else
               ProductTagWidget(product: product),
           ]),
           const SizedBox(height: Dimensions.paddingSizeExtraSmall),

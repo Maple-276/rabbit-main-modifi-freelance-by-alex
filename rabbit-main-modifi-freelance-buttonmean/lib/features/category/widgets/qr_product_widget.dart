@@ -99,19 +99,41 @@ class _QrProductWidgetState extends State<QrProductWidget> {
                     const SizedBox(height: 3),
 
                     Expanded(
-                      flex: 1,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall),
-                          child: Text(widget.product.name ?? '', style: robotoRegular.copyWith(
-                            fontSize: Dimensions.fontSizeDefault ,
-                            color: Theme.of(context).textTheme.titleLarge!.color,
-                          ),
-                              maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis
-                          ),
-                        ),
-                      ),
-                    ),
+  flex: 1,
+  child: Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeSmall),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.product.name ?? '',
+            style: robotoRegular.copyWith(
+              fontSize: Dimensions.fontSizeDefault,
+              color: Theme.of(context).textTheme.titleLarge!.color,
+            ),
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (widget.product.weight != null && widget.product.weight.toString().isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 4.0),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                widget.product.weight.toString(),
+                style: robotoRegular.copyWith(fontSize: 12, color: Theme.of(context).primaryColor),
+              ),
+            ),
+        ],
+      ),
+    ),
+  ),
+),
                     const SizedBox(height: 3),
 
                     Expanded(

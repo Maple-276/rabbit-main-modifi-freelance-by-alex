@@ -121,7 +121,9 @@ class _CategoryScreenState extends State<CategoryScreen> with TickerProviderStat
       body: Consumer<CategoryProvider>(
         builder: (context, category, child) {
           // Determine if the current category is grocery
-          final bool isGrocery = category.selectedSubCategoryId == groceryCategoryId;
+          // Determinar si la categoría o subcategoría es Grocery
+final bool isGrocery = category.selectedSubCategoryId == groceryCategoryId ||
+  (category.subCategoryList?.any((sub) => sub.id.toString() == category.selectedSubCategoryId && sub.parentId?.toString() == groceryCategoryId) ?? false);
 
           return category.isLoading || category.categoryList == null ?
           _categoryShimmer(context, size.height, category) :

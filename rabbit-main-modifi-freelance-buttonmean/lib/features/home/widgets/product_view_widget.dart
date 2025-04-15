@@ -30,7 +30,6 @@ class ProductViewWidget extends StatelessWidget {
 
     return Consumer<ProductProvider>(
       builder: (context, productProvider, _) {
-        print('-----latest=======${productProvider.latestProductModel?.products?.length}');
         return productProvider.latestProductModel != null ?  Consumer<ProductSortProvider>(builder: (context, sortingProvider, child) => SliverPadding(
           padding: ResponsiveHelper.isDesktop(context) ? EdgeInsets.symmetric(
             horizontal: webPadding,
