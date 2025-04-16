@@ -21,7 +21,7 @@ import 'package:provider/provider.dart';
 /// Widget that displays the login form with phone input and persuasive UI elements
 class LoginFormWidget extends StatefulWidget {
   final AuthService authService;
-  final VoidCallback? onOtpLoginRequested;
+  final void Function(String?)? onOtpLoginRequested;
 
   const LoginFormWidget({
     Key? key,
@@ -228,15 +228,15 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeLarge * 2), // Add horizontal padding to shorten the button
                 child: CustomButtonWidget(
                   btnTxt: getTranslated('login_with_otp', context),
+                  textStyle: rubikRegular.copyWith(fontSize: Dimensions.fontSizeDefault),
+                  backgroundColor: Colors.transparent,
                   onTap: () {
                     // Call the callback passed from LoginScreen
-                    widget.onOtpLoginRequested?.call();
+                    widget.onOtpLoginRequested?.call(_phoneController.text);
                   },
-                  // Optional: Adjust other properties like backgroundColor if needed
-                  // backgroundColor: Theme.of(context).primaryColor.withOpacity(0.9),
                 ),
               ),
-              const SizedBox(height: Dimensions.paddingSizeDefault), // Adjusted spacing
+              if(widget.onOtpLoginRequested != null) const SizedBox(height: Dimensions.paddingSizeDefault),
 
               // Toggle between Login and Sign Up
               Row(
