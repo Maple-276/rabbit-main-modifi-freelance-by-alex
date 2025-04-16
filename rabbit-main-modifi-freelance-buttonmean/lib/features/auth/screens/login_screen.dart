@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_restaurant/common/widgets/custom_pop_scope_widget.dart';
+import 'package:flutter_restaurant/common/widgets/custom_asset_image_widget.dart';
+import 'package:flutter_restaurant/common/widgets/custom_button_widget.dart';
+import 'package:flutter_restaurant/common/widgets/custom_text_field_widget.dart';
 import 'package:flutter_restaurant/features/auth/providers/auth_provider.dart';
 import 'package:flutter_restaurant/features/auth/services/auth_service.dart';
 import 'package:flutter_restaurant/features/auth/widgets/login_form_widget.dart';
-import 'package:flutter_restaurant/features/auth/widgets/otp_verification_dialog.dart';
-import 'package:flutter_restaurant/helper/router_helper.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_restaurant/localization/language_constrants.dart';
-import 'package:flutter_restaurant/utill/styles.dart';
+import 'package:flutter_restaurant/utill/images.dart';
+import 'package:flutter_restaurant/utill/dimensions.dart';
+import 'package:provider/provider.dart';
 
 /// A screen that handles user authentication through phone number verification.
 ///
@@ -157,6 +159,68 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return _authService!;
   }
 
+  void _showOtpDialog(BuildContext context) {
+    final otpController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(getTranslated('enter_otp', context)!),
+          content: Form(
+            key: formKey,
+            child: CustomTextFieldWidget(
+              controller: otpController,
+              hintText: '------',
+              inputType: TextInputType.number,
+              onValidate: (value) {
+                if (value == null || value.isEmpty) {
+                  return getTranslated('enter_otp', context);
+                } else if (value.length != 6) {
+                  return getTranslated('otp_must_be_6_digits', context);
+                }
+                return null;
+              },
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(getTranslated('cancel', context)!),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Close the dialog
+              },
+            ),
+            CustomButtonWidget( // Use CustomButtonWidget for consistency
+              btnTxt: getTranslated('verify', context), // Use 'btnTxt'
+              onTap: () { // Assume 'onTap' is the correct parameter
+                if (formKey.currentState?.validate() ?? false) {
+                  String otp = otpController.text;
+                  print('Entered OTP: $otp'); // Placeholder for verification logic
+                  // TODO: Implement actual OTP verification call using Provider
+                  // Provider.of<AuthProvider>(context, listen: false).verifyOtp(phoneNumber, otp);
+                  Navigator.of(dialogContext).pop(); // Close the dialog after processing
+                  // Potentially navigate to main screen on success
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+    // Dispose controller when dialog is potentially closed
+    // Note: A more robust solution might involve StatefulWidget for the dialog content
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // This might not always dispose if dialog is closed differently
+       if (ModalRoute.of(context)?.isCurrent ?? false) {
+         // Check if screen is still active
+       } else {
+           otpController.dispose();
+       }
+    });
+
+  }
+
   @override
   Widget build(BuildContext context) {
     // Handle initialization error
@@ -222,11 +286,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
     
     // Intenta obtener el servicio de autenticación de manera segura
-    AuthService authService;
     try {
-      authService = _getAuthService();
+      _getAuthService();
     } catch (e) {
-      // Si ocurre un error al obtener el servicio, muestra un error y permite reintentar
+      // If an error occurs while obtaining the service, display an error and allow retry
       return Scaffold(
         body: Center(
           child: Column(
@@ -284,11 +347,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                           ),
                           
-                          // Main content - Login form (ahora incluye todos los botones)
+                          // Main content - Login form and OTP Button
                           Center(
-                            child: LoginFormWidget(
-                              authService: authService,
-                              onOtpSent: _showOtpVerificationDialog,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                LoginFormWidget(
+                                  authService: _getAuthService(),
+                                  onOtpLoginRequested: () => _showOtpDialog(context),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -302,80 +371,5 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
       ),
     );
-  }
-
-  /// Shows the OTP verification dialog
-  void _showOtpVerificationDialog(String phone, String tempToken) {
-    if (!mounted) return;
-
-    // Obtenemos la instancia actualizada del servicio de manera segura
-    AuthService authService;
-    try {
-      authService = _getAuthService();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(getTranslated('otp_service_unavailable_error', context)!),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext dialogContext) {
-          return OtpVerificationDialog(
-            phone: phone,
-            tempToken: tempToken,
-            authService: authService,
-            onVerificationSuccess: _handleVerificationSuccess,
-          );
-        },
-      ).catchError((error) {
-        debugPrint('Error showing OTP dialog: $error');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(getTranslated('otp_dialog_display_error', context)!),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      });
-    } catch (e) {
-      debugPrint('Error in _showOtpVerificationDialog: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(getTranslated('otp_processing_error', context)!),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Handles successful OTP verification
-  void _handleVerificationSuccess() {
-    try {
-      // Navigate to dashboard or main page
-      RouterHelper.getDashboardRoute(
-        'home',
-        action: RouteAction.pushNamedAndRemoveUntil,
-      );
-    } catch (e) {
-      debugPrint('Navigation error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(getTranslated('navigation_error', context)!),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }

@@ -1,24 +1,32 @@
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_restaurant/common/models/response_model.dart';
+import 'package:flutter_restaurant/features/auth/domain/models/signup_model.dart';
+import 'package:flutter_restaurant/common/widgets/custom_asset_image_widget.dart';
+import 'package:flutter_restaurant/common/widgets/custom_button_widget.dart';
+import 'package:flutter_restaurant/common/widgets/custom_text_field_widget.dart';
 import 'package:flutter_restaurant/features/auth/providers/auth_provider.dart';
 import 'package:flutter_restaurant/features/auth/services/auth_service.dart';
-import 'package:flutter_restaurant/features/auth/widgets/phone_input_widget.dart';
+import 'package:flutter_restaurant/helper/responsive_helper.dart';
+import 'package:flutter_restaurant/localization/language_constrants.dart';
 import 'package:flutter_restaurant/helper/custom_snackbar_helper.dart';
 import 'package:flutter_restaurant/helper/router_helper.dart';
+import 'package:flutter_restaurant/features/splash/providers/splash_provider.dart';
 import 'package:flutter_restaurant/utill/dimensions.dart';
 import 'package:flutter_restaurant/utill/images.dart';
 import 'package:flutter_restaurant/utill/styles.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_restaurant/localization/language_constrants.dart';
 
 /// Widget that displays the login form with phone input and persuasive UI elements
 class LoginFormWidget extends StatefulWidget {
   final AuthService authService;
-  final Function(String, String) onOtpSent;
-  
+  final VoidCallback? onOtpLoginRequested;
+
   const LoginFormWidget({
     Key? key,
     required this.authService,
-    required this.onOtpSent,
+    this.onOtpLoginRequested,
   }) : super(key: key);
 
   @override
@@ -26,65 +34,97 @@ class LoginFormWidget extends StatefulWidget {
 }
 
 class _LoginFormWidgetState extends State<LoginFormWidget> {
-  final FocusNode _phoneFocus = FocusNode();
-  final TextEditingController _phoneController = TextEditingController();
-  final GlobalKey<FormState> _formKeyLogin = GlobalKey<FormState>();
-  
-  String? _countryCode = '+1';
-  bool _isButtonDisabled = false;
-  DateTime? _lastClickTime;
+  final _formKey = GlobalKey<FormState>();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  String? _countryDialCode;
+  bool _isLoginMode = true; // Start in login mode
+  bool _isButtonDisabled = false; // Track button state
+
+  @override
+  void initState() {
+    super.initState();
+    _countryDialCode = CountryCode.fromCountryCode(Provider.of<SplashProvider>(context, listen: false).configModel!.countryCode!).dialCode;
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
-    _phoneFocus.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Submits the form for login or registration based on the current mode
+  void _submitForm(AuthProvider authProvider) async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() => _isButtonDisabled = true);
+
+      String phoneNumber = '$_countryDialCode${_phoneController.text.trim()}';
+      String password = _passwordController.text.trim();
+
+      try {
+        ResponseModel responseModel;
+        if (_isLoginMode) {
+          // Login Logic
+          responseModel = await authProvider.login(phoneNumber, password, 'phone');
+        } else {
+          // Registration Logic - Simplified
+          SignUpModel signUpModel = SignUpModel(
+            password: password,
+            phone: phoneNumber,
+          );
+          final configModel = Provider.of<SplashProvider>(context, listen: false).configModel;
+          if(configModel == null) {
+             showCustomSnackBarHelper(getTranslated('configuration_not_loaded', context));
+             setState(() => _isButtonDisabled = false);
+             return;
+          }
+          responseModel = await authProvider.registration(signUpModel, configModel);
+        }
+
+        // Handle response
+        if (responseModel.isSuccess) {
+          // Navigate to main screen on successful login/registration
+          context.go(RouterHelper.getMainRoute(action: RouteAction.pushReplacement));
+          showCustomSnackBarHelper(getTranslated(_isLoginMode ? 'login_successful' : 'registration_successful', context), isError: false);
+        } else {
+          showCustomSnackBarHelper(responseModel.message);
+        }
+      } catch (e) {
+        showCustomSnackBarHelper(getTranslated('something_went_wrong', context));
+        debugPrint('Login/Registration Error: $e');
+      } finally {
+        // Use mounted check before updating state in async gap
+        if (mounted) {
+          setState(() => _isButtonDisabled = false);
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
-    final bool isDesktop = width > 900;
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
-    return Container(
-      width: isDesktop ? 480 : width,
-      margin: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 0 : Dimensions.paddingSizeLarge,
-        vertical: Dimensions.paddingSizeLarge,
-      ),
-      padding: isDesktop 
-        ? const EdgeInsets.all(40) 
-        : const EdgeInsets.all(Dimensions.paddingSizeLarge),
-      decoration: isDesktop ? BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          )
-        ],
-      ) : null,
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) => Form(
-          key: _formKeyLogin,
+    final bool isDesktop = ResponsiveHelper.isDesktop(context);
+
+    return Consumer<AuthProvider>(builder: (context, authProvider, child) {
+      return Form(
+        key: _formKey,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: isDesktop ? 0 : Dimensions.paddingSizeLarge),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center, 
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Rabbit logo
               Container(
                 height: 120,
                 width: 120,
                 margin: const EdgeInsets.only(bottom: 15),
-                child: Image.asset(
+                child: CustomAssetImageWidget(
                   Images.logo,
                   fit: BoxFit.contain,
                 ),
               ),
-              
               // Persuasive main message
               Text(
                 getTranslated('headline_favorites_one_click', context)!,
@@ -95,9 +135,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
               const SizedBox(height: 8),
-              
               // Persuasive subtitle
               Text(
                 getTranslated('subtitle_enter_number_enjoy', context)!,
@@ -108,7 +146,6 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
               // Contextual trust text
               Padding(
                 padding: const EdgeInsets.only(top: 5),
@@ -133,34 +170,101 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                   ],
                 ),
               ),
-              
               const SizedBox(height: 30),
-              
-              // Phone input
-              PhoneInputWidget(
+              // Phone Number Field (Common to both modes)
+              CustomTextFieldWidget(
+                hintText: getTranslated('enter_phone_number', context),
                 controller: _phoneController,
-                focusNode: _phoneFocus,
-                countryCode: _countryCode,
-                isDarkMode: isDarkMode,
-                onCountryChanged: (code) {
+                inputType: TextInputType.phone,
+                countryDialCode: _countryDialCode,
+                onCountryChanged: (CountryCode code) {
                   setState(() {
-                    _countryCode = code.dialCode;
+                    _countryDialCode = code.dialCode;
                   });
                 },
+                onValidate: (value) {
+                  if (value == null || value.isEmpty) {
+                    return getTranslated('enter_phone_number', context);
+                  } else if (!RegExp(r'^[0-9]{8,15}$').hasMatch(value)) {
+                    return getTranslated('enter_valid_phone_number', context);
+                  }
+                  return null;
+                },
               ),
-              
-              const SizedBox(height: 12),
-              
-              // Error message display
-              _buildErrorMessage(authProvider),
-              
-              const SizedBox(height: 24),
-              
-              // Continue button
-              _buildContinueButton(authProvider),
-              
-              const SizedBox(height: 20),
-              
+              const SizedBox(height: Dimensions.paddingSizeLarge),
+              // Password Field (Common to both modes)
+              CustomTextFieldWidget(
+                hintText: getTranslated('password', context),
+                controller: _passwordController,
+                inputType: TextInputType.visiblePassword,
+                isPassword: true,
+                isShowSuffixIcon: true,
+                prefixIconData: Icons.lock_outline,
+                inputAction: TextInputAction.done,
+                onValidate: (value) {
+                  if (value == null || value.isEmpty) {
+                    return getTranslated('enter_password', context);
+                  } else if (value.length < 6) {
+                    return getTranslated('password_should_be', context);
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: Dimensions.paddingSizeExtraLarge),
+              // Submit Button
+              !authProvider.isLoading
+                  ? CustomButtonWidget(
+                      isLoading: _isButtonDisabled,
+                      btnTxt: _isLoginMode
+                        ? getTranslated('login', context)
+                        : getTranslated('register', context),
+                      onTap: _isButtonDisabled ? null : () => _submitForm(authProvider),
+                    )
+                  : const Center(child: CircularProgressIndicator()),
+              const SizedBox(height: Dimensions.paddingSizeDefault),
+
+              // Login with OTP button - Styled as CustomButtonWidget
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeLarge * 2), // Add horizontal padding to shorten the button
+                child: CustomButtonWidget(
+                  btnTxt: getTranslated('login_with_otp', context),
+                  onTap: () {
+                    // Call the callback passed from LoginScreen
+                    widget.onOtpLoginRequested?.call();
+                  },
+                  // Optional: Adjust other properties like backgroundColor if needed
+                  // backgroundColor: Theme.of(context).primaryColor.withOpacity(0.9),
+                ),
+              ),
+              const SizedBox(height: Dimensions.paddingSizeDefault), // Adjusted spacing
+
+              // Toggle between Login and Sign Up
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    getTranslated(_isLoginMode ? 'dont_have_account' : 'already_have_account', context)!,
+                    style: rubikRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).hintColor),
+                  ),
+                  const SizedBox(width: Dimensions.paddingSizeSmall),
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _isLoginMode = !_isLoginMode;
+                        // Optionally clear fields when switching modes
+                        _phoneController.clear(); // Keep phone?
+                        _passwordController.clear();
+                      });
+                    },
+                    child: Text(
+                      getTranslated(_isLoginMode ? 'signup' : 'login', context)!,
+                      style: rubikMedium.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).primaryColor),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Dimensions.paddingSizeDefault),
+
               // Social proof element
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -187,9 +291,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                   ],
                 ),
               ),
-              
               const SizedBox(height: 15),
-              
               // Terms and privacy policy text
               Text(
                 getTranslated('legal_terms_privacy', context)!,
@@ -200,108 +302,16 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
               // Cancel button (if applicable)
               if (Navigator.canPop(context)) _buildCancelButton(),
-              
               // Guest login button
               const SizedBox(height: 15),
               _buildGuestLoginButton(),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  /// Builds the error message display
-  Widget _buildErrorMessage(AuthProvider authProvider) {
-    if (authProvider.loginErrorMessage == null || authProvider.loginErrorMessage!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16, top: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.error.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: Theme.of(context).colorScheme.error,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              authProvider.loginErrorMessage ?? "",
-              style: rubikRegular.copyWith(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds the continue button or loading indicator
-  Widget _buildContinueButton(AuthProvider authProvider) {
-    if (authProvider.isLoading || authProvider.isPhoneNumberVerificationButtonLoading) {
-      return Center(
-        child: Container(
-          width: 24,
-          height: 24,
-          margin: const EdgeInsets.all(16),
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
-            strokeWidth: 2,
-          ),
-        ),
       );
-    }
-    
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isButtonDisabled 
-          ? null
-          : _onContinuePressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _isButtonDisabled
-            ? Theme.of(context).primaryColor.withOpacity(0.7)
-            : Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              getTranslated('button_start_now', context)!,
-              style: rubikBold.copyWith(fontSize: 16),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.arrow_forward_rounded,
-              size: 18,
-            ),
-          ],
-        ),
-      ),
-    );
+    });
   }
 
   /// Builds the cancel button
@@ -325,16 +335,15 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
       ),
     );
   }
-  
+
   /// Builds the guest login button
   Widget _buildGuestLoginButton() {
     return Center(
       child: ElevatedButton.icon(
         onPressed: () {
-          // Verificar que la ruta sea válida antes de navegar
           try {
             if (Navigator.canPop(context)) {
-              Navigator.of(context).pop(); // Cierra el diálogo actual si existe
+              Navigator.of(context).pop();
             }
             RouterHelper.getDashboardRoute(
               'home',
@@ -369,98 +378,4 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
       ),
     );
   }
-
-  /// Prevents rapid multiple taps on buttons
-  bool _isMultiTapping() {
-    if (_lastClickTime == null) {
-      _lastClickTime = DateTime.now();
-      return false;
-    }
-    
-    final DateTime now = DateTime.now();
-    final Duration difference = now.difference(_lastClickTime!);
-    
-    if (difference.inMilliseconds < 1000) { // 1 second between clicks
-      return true;
-    }
-    
-    _lastClickTime = now;
-    return false;
-  }
-
-  /// Handles continue button press
-  void _onContinuePressed() {
-    // Prevent multiple taps
-    if (_isMultiTapping()) {
-      return;
-    }
-    
-    // Disable button while processing
-    setState(() {
-      _isButtonDisabled = true;
-    });
-    
-    try {
-      final String phoneText = _phoneController.text.trim();
-      final (isValid, errorMessage) = widget.authService.validatePhoneNumber(phoneText);
-      
-      if (!isValid) {
-        showCustomSnackBarHelper(errorMessage ?? getTranslated('error_invalid_number', context)!);
-        setState(() {
-          _isButtonDisabled = false;
-        });
-        return;
-      }
-      
-      // Format phone number with country code
-      final String formattedPhone = widget.authService.formatPhoneWithCountryCode(
-        phoneText, 
-        _countryCode
-      );
-      
-      // Send verification code
-      _sendVerificationCode(formattedPhone);
-      
-    } catch (e) {
-      showCustomSnackBarHelper(getTranslated('error_processing_request', context)!);
-      debugPrint('Phone validation error: $e');
-      
-      // Reset button state on error
-      if (mounted) {
-        setState(() {
-          _isButtonDisabled = false;
-        });
-      }
-    }
-  }
-
-  /// Sends verification code to the provided phone number
-  Future<void> _sendVerificationCode(String phone) async {
-    try {
-      final result = await widget.authService.sendVerificationCode(phone);
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _isButtonDisabled = false;
-      });
-      
-      if (result.success) {
-        String successMsg = getTranslated('success_otp_sent_to_phone', context)!.replaceAll('{phoneNumber}', phone);
-        showCustomSnackBarHelper(successMsg, isError: false);
-        
-        // Call the OTP sent callback with phone and temp token
-        widget.onOtpSent(phone, result.tempToken ?? '');
-      } else {
-        showCustomSnackBarHelper(result.message ?? getTranslated('error_sending_otp', context)!);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isButtonDisabled = false;
-        });
-        showCustomSnackBarHelper(getTranslated('error_processing_request', context)!, isError: true);
-      }
-    }
-  }
-} 
+}
